@@ -1,0 +1,11 @@
+﻿CodMaquina,Descripcion,IdReglaSec,NMaq
+M01,Torno universal,16,1
+M02,Fresadora vertival,16,2
+M03,Fresadora horizontal,16,3
+M04,Prensa 1T,16,4
+M05,Extrusora,16,5
+M06,Dobladora de tubos,16,6
+M07,Torno CNC,16,7
+M08,Fundición,16,8
+M09,Taladro,16,9
+M10,Cabina de pintura,16,10

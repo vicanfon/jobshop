@@ -1,0 +1,21 @@
+﻿CodPieza,Descripcion,ColorGantt,NPieza
+P01,Cilindro d 30 con pasador,255,1
+P02,Chapa circular d 20 con 4 agujeros,65535,2
+P03,"Cilindro con ds 10, 14, 17",8454016,3
+P04,Lamina perforada,16744703,4
+P05,Tubo doblado a escruadra,4194432,5
+P06,Cuerpo de agua,33023,6
+P07,Cuerpo de gas,4227200,7
+P08,Carcasa ref 84757,8421440,8
+P09,Chapa para quemador,12632256,9
+P10,Placa de sujeción carcasa,32768,10
+P11,Piloto,8388736,11
+P12,Varilla sensor,10279750,12
+P13,Plancha trasera,15642851,13
+P14,Chapa para placa sujeción,13283056,14
+P15,Elto de sujeción cuerpo,12313543,15
+P16,Cuerpo de quemador,15450292,16
+P17,Soporte chapas quemador,15577559,17
+P18,Elto conexión agua,12248036,18
+P19,Elto conexión gas,12895655,19
+P20,Control,16777215,20
