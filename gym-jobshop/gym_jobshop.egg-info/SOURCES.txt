@@ -1,0 +1,6 @@
+README.md
+gym_jobshop.egg-info/PKG-INFO
+gym_jobshop.egg-info/SOURCES.txt
+gym_jobshop.egg-info/dependency_links.txt
+gym_jobshop.egg-info/requires.txt
+gym_jobshop.egg-info/top_level.txt
