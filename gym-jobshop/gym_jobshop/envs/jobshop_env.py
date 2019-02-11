@@ -54,6 +54,7 @@ class JobShopEnv(Env):
 
     def _get_reward(self):
         """ Compute the av_waiting time """
+        # print (self.EnvState['avg_waiting_time'].mean())
         return - self.EnvState['avg_waiting_time'].mean()
 
     def reset(self):
@@ -99,8 +100,8 @@ class JobShopEnv(Env):
             length = len(self.Buffer[i].queue)
             self.EnvState.loc[i,'queue_length']= length
             if length > 0:
-                clock2=pd.to_datetime(self.Buffer[i].queue['arrivalDate']).iloc[0]
-                difference=pd.to_datetime(self.Buffer[i].queue['arrivalDate'])-clock2
+                clock2=pd.to_datetime(self.Buffer[i].queue['queueDate']).sort_values(ascending = False).iloc[0]
+                difference=clock2-pd.to_datetime(self.Buffer[i].queue['queueDate'])
                 self.EnvState.loc[i,'avg_waiting_time']=difference.mean().seconds
             else:
                 self.EnvState.loc[i,'avg_waiting_time']=0

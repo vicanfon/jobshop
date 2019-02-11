@@ -7,6 +7,8 @@ from machineNN import machineNN
 from eventSimulator import eventSimulator
 import winsound
 import matplotlib.pyplot as plt
+from pathlib import Path
+
 
 
 # create environment
@@ -27,13 +29,16 @@ n_rules=3
 
 # list of machineNN
 machinesNN = {i[0]: machineNN(n_obs, n_rules) for i in df_Machines.values}
-for i in df_Machines['CodMaquina']:
-    machinesNN[i].loadModel(i)
+
+my_file = Path("modelM01.h5")
+if my_file.is_file():
+    for i in df_Machines['CodMaquina']:
+        machinesNN[i].loadModel(i)
 
 eSimulator = 0
 reward_history = []
 
-MAX_NUM_EPISODES = 10
+MAX_NUM_EPISODES = 30
 
 for episode in range(MAX_NUM_EPISODES):
     print("episode: "+str(episode))
@@ -86,10 +91,6 @@ for episode in range(MAX_NUM_EPISODES):
     reward_history.append(totalReward)
     
 
-    
-    # all the events are processed
-    # env.showStats()
-    #display(eSimulator.history())
 
 for i in df_Machines['CodMaquina']:
     machinesNN[i].saveModel(i)
