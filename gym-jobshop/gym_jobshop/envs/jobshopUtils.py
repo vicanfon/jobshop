@@ -26,7 +26,7 @@ class Machine():
     def __init__(self, id):
         self.idMachine = id
         self.processingJob = -1    # id of job processed
-        queueItem_columns = ['id','phase','lote','tp','tu','queueDate','arrivalDate','idOrder','deliverDate']
+        queueItem_columns = ['id','phase','lote','tp','tu','queueDate','arrivalDate','idOrder','operationTime','deliverDate']
         self.queue = pd.DataFrame(columns=queueItem_columns)     # empty panda object of type queueItem
     def selectJob(self,idRule):
         chosen = []
@@ -37,9 +37,9 @@ class Machine():
         elif idRule == rules.LIFO.value:
             chosen = pd.DataFrame([self.queue.sort_values(by=['queueDate']).iloc[-1]])
         elif idRule == rules.SOT.value:
-            pass
+            chosen = pd.DataFrame([self.queue.sort_values(by=['operationTime']).iloc[0]])
         elif idRule == rules.LOT.value:
-            pass
+            chosen = pd.DataFrame([self.queue.sort_values(by=['operationTime']).iloc[-1]])
         elif idRule == rules.SROT.value:
             pass
         elif idRule == rules.LROT.value:

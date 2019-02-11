@@ -17,7 +17,7 @@ class JobShopEnv(Env):
     def __init__(self):
         # self.viewer = None
         # coger una máquina y una de las 16 reglas de secuenciación
-        self.action_space = spaces.Tuple((spaces.Discrete(5), spaces.Discrete(3))) # todo now three rules
+        self.action_space = spaces.Tuple((spaces.Discrete(5), spaces.Discrete(5))) # todo now five rules
         # state with lenght of the queue and  y del trabajo
         # self.observation_space = spaces.Box(0,np.inf, shape=(1,0), dtype = np.int16), "av_waiting_time": spaces.Box(0,np.inf, shape=(1,0), dtype = np.int16)})
         self.observation_space = spaces.Box(0,np.inf, shape=(10,3), dtype = np.int16) # 'queue_length','avg_waiting_time', 'workingOn'
@@ -65,7 +65,7 @@ class JobShopEnv(Env):
         self.EnvState['workingOn']=0
         # Initialize machine parameters
         self.Buffer = {i[0]: Machine(i[0]) for i in self.df_Machines.values}
-
+        # TODO: I think I can delete this loop
         for i in self.Buffer:
             self.EnvState.loc[i,'queue_length']=len(self.Buffer[i].queue)
 
@@ -81,7 +81,7 @@ class JobShopEnv(Env):
         # Assign Events to Machine queues
         # jobsExtended = self.df_Orders[self.df_Orders['IdPedido'].isin(jobs['IdPedido'])].join(self.df_Routes.set_index('CodPieza'), on='CodPieza')  # reset_index().
         for i in jobs.values:
-            self.Buffer[i[6]].queue=self.Buffer[i[6]].queue.append({'id':i[0],'phase':i[7],'lote':i[2],'tp': i[8],'tu': i[9],'queueDate':clock,'arrivalDate':i[3],'idOrder':i[0],'deliverDate':i[4]}, ignore_index=True) # assign piece to queue
+            self.Buffer[i[6]].queue=self.Buffer[i[6]].queue.append({'id':i[0],'phase':i[7],'lote':i[2],'tp': i[8],'tu': i[9],'queueDate':clock,'arrivalDate':i[3],'idOrder':i[0],'operationTime': i[8]+i[2]*i[9],'deliverDate':i[4]}, ignore_index=True) # assign piece to queue
         
         self._computeState()
 

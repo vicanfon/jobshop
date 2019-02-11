@@ -24,7 +24,7 @@ df_Routes = pd.read_csv("./data/Routes.csv", delimiter=',')
 env.setEnv(df_Machines, df_Products, df_Routes)
 
 n_obs=2
-n_rules=3
+n_rules=5
 
 
 # list of machineNN
@@ -38,7 +38,7 @@ if my_file.is_file():
 eSimulator = 0
 reward_history = []
 
-MAX_NUM_EPISODES = 30
+MAX_NUM_EPISODES = 6
 
 for episode in range(MAX_NUM_EPISODES):
     print("episode: "+str(episode))
