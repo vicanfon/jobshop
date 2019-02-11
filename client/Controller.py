@@ -33,7 +33,7 @@ for i in df_Machines['CodMaquina']:
 eSimulator = 0
 reward_history = []
 
-MAX_NUM_EPISODES = 6
+MAX_NUM_EPISODES = 10
 
 for episode in range(MAX_NUM_EPISODES):
     print("episode: "+str(episode))
@@ -80,6 +80,8 @@ for episode in range(MAX_NUM_EPISODES):
     totalReward=0
     for i in df_Machines['CodMaquina']:
         totalReward += machinesNN[i].getMachineTReward()
+        machinesNN[i].resetMachineReward()
+
     print("time: "+str(time)+" - Reward: "+str(totalReward))
     reward_history.append(totalReward)
     
@@ -88,12 +90,14 @@ for episode in range(MAX_NUM_EPISODES):
     # all the events are processed
     # env.showStats()
     #display(eSimulator.history())
-eSimulator.history().to_excel("outputNN.xlsx")
+
 for i in df_Machines['CodMaquina']:
     machinesNN[i].saveModel(i)
 
 plt.plot(reward_history)
 plt.show()
+
+eSimulator.history().to_excel("outputNN.xlsx")
 
 print('finished')
 winsound.PlaySound('SystemExclamation', winsound.SND_FILENAME)

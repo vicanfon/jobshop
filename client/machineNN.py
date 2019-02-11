@@ -14,7 +14,7 @@ class machineNN():
         self.model.add(Dense(n_outputs, activation='linear'))
         self.model.compile(loss='mse', optimizer='adam', metrics=['mae'])
         self.y = 0.95
-        self.eps = 0.5
+        self.eps = 0.2
         self.decay_factor = 0.999
         self.reward = 0
 
@@ -41,6 +41,9 @@ class machineNN():
     
     def getMachineTReward(self):
         return self.reward
+    
+    def resetMachineReward(self):
+        self.reward = 0
 
     def getStats(self):
         # compute stats on time, occupation, etc
