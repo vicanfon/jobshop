@@ -38,7 +38,7 @@ if my_file.is_file():
 eSimulator = 0
 reward_history = []
 
-MAX_NUM_EPISODES = 6
+MAX_NUM_EPISODES = 20
 
 for episode in range(MAX_NUM_EPISODES):
     print("episode: "+str(episode))
