@@ -10,6 +10,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from gym_jobshop.envs.jobshopUtils import Machine
+from gym_jobshop.envs.eventSimulator import eventSimulator
 
 class JobShopEnv(Env):
     metadata = {'render.modes': ['human']}
@@ -22,7 +23,12 @@ class JobShopEnv(Env):
         # self.observation_space = spaces.Box(0,np.inf, shape=(1,0), dtype = np.int16), "av_waiting_time": spaces.Box(0,np.inf, shape=(1,0), dtype = np.int16)})
         self.observation_space = spaces.Box(0,np.inf, shape=(10,3), dtype = np.int16) # 'queue_length','avg_waiting_time', 'workingOn'
         # self.seed()
-    
+
+    def getEventSimulator(self):
+        self.eventSimulator = eventSimulator()
+
+        return self.eventSimulator
+
     def setEnv(self, machines, products, routes):
         """
         Receives four pandas dataframes with data on machines, products, orders and routes

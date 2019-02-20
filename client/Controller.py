@@ -4,7 +4,7 @@ from gym_jobshop import *
 import pandas as pd
 import numpy as np
 from machineNN import machineNN
-from eventSimulator import eventSimulator
+# from eventSimulator import eventSimulator
 import winsound
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -42,7 +42,7 @@ MAX_NUM_EPISODES = 20
 
 for episode in range(MAX_NUM_EPISODES):
     print("episode: "+str(episode))
-    eSimulator= eventSimulator()
+    eSimulator= env.getEventSimulator()
     # reset the environment and get the status of the environment
     obs = env.reset()
     # update eps on the Q-learning
