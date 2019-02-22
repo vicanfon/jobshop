@@ -26,10 +26,11 @@ class Machine():
     def __init__(self, id):
         self.idMachine = id
         self.processingJob = -1    # id of job processed
-        queueItem_columns = ['id','phase','lote','tp','tu','queueDate','arrivalDate','idOrder','operationTime','deliverDate']
+        queueItem_columns = ['id','phase','lote','tp','tu','queueDate','arrivalDate','idOrder','operationTime','deliverDate','remainingTasks','remainingJobs','ss','ds','ssrot','dsrot','ssro','dsro']   # todo add operations left,
         self.queue = pd.DataFrame(columns=queueItem_columns)     # empty panda object of type queueItem
     def selectJob(self,idRule):
         chosen = []
+        # todo: compute dynamic attributes
         if idRule == rules.random.value:
             chosen = self.queue.sample(n=1)
         elif idRule == rules.FIFO.value:
@@ -47,19 +48,19 @@ class Machine():
         elif idRule == rules.LRO.value:
             pass
         elif idRule == rules.DD.value:
-            pass
+            chosen = pd.DataFrame([self.queue.sort_values(by=['deliverDate']).iloc[0]])
         elif idRule == rules.SS.value:
-            pass
+            chosen = pd.DataFrame([self.queue.sort_values(by=['ss']).iloc[0]])
         elif idRule == rules.DS.value:
-            pass
+            chosen = pd.DataFrame([self.queue.sort_values(by=['ds']).iloc[0]])
         elif idRule == rules.SSROT.value:
-            pass
+            chosen = pd.DataFrame([self.queue.sort_values(by=['ssrot']).iloc[0]])
         elif idRule == rules.DSROT.value:
-            pass
+            chosen = pd.DataFrame([self.queue.sort_values(by=['dsrot']).iloc[0]])
         elif idRule == rules.SSRO.value:
-            pass
+            chosen = pd.DataFrame([self.queue.sort_values(by=['ssro']).iloc[0]])
         elif idRule == rules.DSRO.value:
-            pass
+            chosen = pd.DataFrame([self.queue.sort_values(by=['dsro']).iloc[0]])
         # self.processingJob = chosen.copy(deep=True)
         self.queue.drop(chosen.index, inplace=True)
         self.processingJob = chosen['idOrder'].values[0]
