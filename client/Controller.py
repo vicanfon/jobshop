@@ -21,7 +21,7 @@ df_Products = pd.read_csv("./data/Products.csv", delimiter=',')
 df_Routes = pd.read_csv("./data/Routes.csv", delimiter=',')
 
 
-env.setEnv(df_Machines, df_Products, df_Routes)
+env.setEnv(df_Machines, df_Products, df_Routes, df_Orders)
 
 n_obs=2
 n_rules=5
@@ -42,45 +42,41 @@ MAX_NUM_EPISODES = 20
 
 for episode in range(MAX_NUM_EPISODES):
     print("episode: "+str(episode))
-    eSimulator= env.getEventSimulator()
     # reset the environment and get the status of the environment
     obs = env.reset()
-    # update eps on the Q-learning
     
-    # Compute line of events
-    eSimulator.initializeEvents(df_Orders, df_Routes)  # panda df with events. Structure: TEvent, event, IdPedido, CodPieza, CodMaquina . Events are not executed
-    clock, eventsList = eSimulator.nextEvents()
+    # Get next tick and list of events on that tick
+    clock, eventsList = env.nextEvents()
     
     while (len(eventsList)>0):
         eventsGroups=eventsList.groupby('CodMaquina')
 
-        # process each machine
+        # for each machine with events process all its events
         for machine,jobs in eventsGroups:
-            # print("Processing "+ machine)
             # event 1: load jobs that arrive at this time            
-            if len(jobs[jobs["event"]==1])>0:  #if this machine has a three event in this tick
-                obs = env.assignJobs(machine, jobs[jobs["event"]==1], clock)
-                eSimulator.addEvents(jobs[jobs["event"]==1])    # update 3 to executed
+            if len(jobs[jobs["event"]==1])>0:
+                env.assignJobs(machine, jobs[jobs["event"]==1], clock)
             
             # event 3: free the machine if a job just finished
-            if len(jobs[jobs["event"]==3])>0:  #if this machine has a three event in this tick
-                obs = env.freeMachine(machine) # free machine so that it can take more jobs
+            if len(jobs[jobs["event"]==3])>0:
+                env.freeMachine(machine, clock) # free machine so that it can take more jobs
                 # if there are jobs at the queue we can choose
-                job = jobs.loc[jobs["event"]==3,'IdPedido'].values[0]
-                eSimulator.addEvent(job, 3, clock)    # update 3 to executed
-            
+                # job = jobs.loc[jobs["event"]==3,'IdPedido'].values[0]
+
+            obs = env.computeState() # TODO: I am updating all states, how to optimize
+
             # if after assigning and liberating there are jobs and the machine is free select next job
             if obs.loc[machine, 'workingOn'] == -1 and obs.loc[machine, 'queue_length'] > 0:
                 selectedRule = machinesNN[machine].selectJobNN(obs.loc[machine].drop(labels='workingOn'))   # selected job is a rule here (1 of 16), not a specific one
-                nobs, reward, episode_over, info = env.step((machine, selectedRule))       # pass action
+                nobs, reward, episode_over, info = env.step((machine, selectedRule, clock))       # pass action
                 machinesNN[machine].trainNN(obs.loc[machine].drop(labels='workingOn'), nobs.loc[machine].drop(labels='workingOn'), reward)
                 obs=nobs.copy(deep=True)
                 # input event 2 for doc purposes
-                job = obs.loc[machine, 'workingOn']
-                eSimulator.addEvent(job, 2, clock, selectedRule)
+                # job = obs.loc[machine, 'workingOn']
+                # eSimulator.addEvent(job, 2, clock, selectedRule)
 
         # next clock iteration
-        clock, eventsList = eSimulator.nextEvents()
+        clock, eventsList = env.nextEvents()
     time = eSimulator.history().iloc[-1].TEvent - eSimulator.history().iloc[0].TEvent
     totalReward=0
     for i in df_Machines['CodMaquina']:

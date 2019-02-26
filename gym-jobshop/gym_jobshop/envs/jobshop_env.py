@@ -24,18 +24,18 @@ class JobShopEnv(Env):
         self.observation_space = spaces.Box(0,np.inf, shape=(10,3), dtype = np.int16) # 'queue_length','avg_waiting_time', 'workingOn'
         # self.seed()
 
-    def getEventSimulator(self):
-        self.eventSimulator = eventSimulator()
 
-        return self.eventSimulator
-
-    def setEnv(self, machines, products, routes):
+    def setEnv(self, machines, products, routes, orders):
         """
         Receives four pandas dataframes with data on machines, products, orders and routes
         """
         self.df_Machines = machines
         self.df_Products = products
         self.df_Routes = routes
+        self.df_Routes['n_pasos'] = self.df_Routes.groupby('CodPieza')['CodPieza'].transform('count')
+        self.df_Routes['TTPreparacion'] = self.df_Routes.groupby('CodPieza')['TPreparacion'].transform('sum')
+        self.df_Routes['TTUnitario'] = self.df_Routes.groupby('CodPieza')['TUnitario'].transform('sum')
+        self.df_Orders = orders
         self._nMachines= len(self.df_Machines.index)
         self._nProducts= len(self.df_Products.index)
 
@@ -49,12 +49,14 @@ class JobShopEnv(Env):
     def step(self, action):
         # action is a tuple (machine, rule)
 
-        self.Buffer[action[0]].selectJob(action[1])
+        job = self.Buffer[action[0]].selectJob(action[1])
         
         self._computeState()
         obs = self.EnvState.copy(deep=True)
         reward = self._get_reward()
         episode_over = False
+        # update the event 2
+        self.eventSimulator.addEvent(job, 2, action[2], action[1])
 
         return obs, reward, episode_over, {}
 
@@ -64,6 +66,9 @@ class JobShopEnv(Env):
         return - self.EnvState['avg_waiting_time'].mean()
 
     def reset(self):
+        # reset event simulator
+        self.eventSimulator = eventSimulator(self.df_Orders, self.df_Routes)
+
         # Initialize status of the environment. Status of machine: queue_length and avg_waiting_time. Status of env: todo
         self.EnvState = pd.DataFrame(columns={'queue_length','avg_waiting_time', 'workingOn'},index=self.df_Machines.values[:,0])
         self.EnvState['queue_length']=0
@@ -71,9 +76,6 @@ class JobShopEnv(Env):
         self.EnvState['workingOn']=0
         # Initialize machine parameters
         self.Buffer = {i[0]: Machine(i[0]) for i in self.df_Machines.values}
-        # TODO: I think I can delete this loop
-        for i in self.Buffer:
-            self.EnvState.loc[i,'queue_length']=len(self.Buffer[i].queue)
 
         return self.EnvState
 
@@ -83,36 +85,51 @@ class JobShopEnv(Env):
 
         return self.df_Events.query("executed == False & TEvent == '" + self.clock +"'")[['TEvent','event','IdPedido','CodPieza','CodMaquina']]
     
-    def assignJobs(self, machine, jobs, clock):
-        # Assign Events to Machine queues
-        # jobsExtended = self.df_Orders[self.df_Orders['IdPedido'].isin(jobs['IdPedido'])].join(self.df_Routes.set_index('CodPieza'), on='CodPieza')  # reset_index().
-        for i in jobs.values:
-            self.Buffer[i[6]].queue=self.Buffer[i[6]].queue.append({'id':i[0],'phase':i[7],'lote':i[2],'tp': i[8],'tu': i[9],'queueDate':clock,'arrivalDate':i[3],'idOrder':i[0],'operationTime': i[8]+i[2]*i[9],'deliverDate':i[4]}, ignore_index=True) # assign piece to queue
-        
-        self._computeState()
+    def assignJobs(self, machine, events, clock):
+        # Assign jobs to machine queue
+        jobs = events.join(self.df_Orders.set_index('IdPedido'), on='IdPedido').merge(self.df_Routes, left_on=['CodPieza','Fase','CodMaquina'], right_on=['CodPieza','Fase','CodMaquina']).copy(deep=True)
+        # jobs['TiempoProcesamiento'] = jobs['TPreparacion']+jobs['TUnitario']*jobs['Lote']
+        jobs['FechaCola'] = clock
+        jobs['TiempoProcesamiento'] = jobs['TPreparacion'] + jobs['TUnitario'] * \
+                                                jobs['Lote']
+        jobs['TiempoOcupacion'] = jobs['TTPreparacion'] + jobs['TTUnitario'] * \
+                                                jobs['Lote']
+        jobs['TiempoRestante'] = jobs['TiempoOcupacion']
+        jobs['n_pasos_restantes'] = jobs['n_pasos']
+        jobs = jobs[['IdPedido','FechaPedido','FechaEntrega','FechaCola','TiempoProcesamiento','TiempoOcupacion','TiempoRestante','n_pasos','n_pasos_restantes']]
+        # add new jobs
+        self.Buffer[machine].queue= self.Buffer[machine].queue.append(jobs, ignore_index=True)
 
-        return self.EnvState.copy(deep=True)
-    
-    def freeMachine(self, machine):
+        # self.Buffer[i[6]].queue=self.Buffer[i[6]].queue.append({'id':i[0],'phase':i[7],'lote':i[2],'tp': i[8],'tu': i[9],'queueDate':clock,'arrivalDate':i[3],'idOrder':i[0],'operationTime': i[8]+i[2]*i[9],'deliverDate':i[4], 'remainingSteps': i[10]-int(i[7]/10)}, ignore_index=True) # assign piece to queue
+
+        self.eventSimulator.markExecuted(events)
+
+
+    def freeMachine(self, machine, clock):
         # Assign Events to Machine queues
+        self.eventSimulator.addEvent(self.Buffer[machine].processingJob, 3, clock)  # update 3 to executed
         self.Buffer[machine].processingJob = -1
-        self._computeState()
 
-        return self.EnvState.copy(deep=True)
 
-    def _computeState(self):
+    def computeState(self):
         # Compute state of the environment (aka statistics) after assigning work
         for i in self.Buffer:
             length = len(self.Buffer[i].queue)
             self.EnvState.loc[i,'queue_length']= length
             if length > 0:
-                clock2=pd.to_datetime(self.Buffer[i].queue['queueDate']).sort_values(ascending = False).iloc[0]
-                difference=clock2-pd.to_datetime(self.Buffer[i].queue['queueDate'])
+                clock2=pd.to_datetime(self.Buffer[i].queue['FechaCola']).sort_values(ascending = False).iloc[0]
+                difference=clock2-pd.to_datetime(self.Buffer[i].queue['FechaCola'])
                 self.EnvState.loc[i,'avg_waiting_time']=difference.mean().seconds
             else:
                 self.EnvState.loc[i,'avg_waiting_time']=0
             self.EnvState.loc[i,'workingOn']=self.Buffer[i].processingJob
 
+        return self.EnvState.copy(deep=True)
+
+
     def render(self, mode='human', close=False):
         """ Viewer only supports human mode currently. """
         pass
+
+    def nextEvents(self):
+        return self.eventSimulator.nextEvents()

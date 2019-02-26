@@ -3,23 +3,18 @@ import numpy as np
 
 
 class eventSimulator():
-    def __init__(self):
-        self.df_Events =[]
-        self.df_Orders =[]
-        self.df_Routes =[]
-        self.clock = 0
-    
-    def initializeEvents(self, Orders, Routes):
-
-        self.df_Orders = Orders
-        self.df_Routes = Routes
+    def __init__(self, Orders, Routes):
         # Initialize list of events
-        self.df_Events=self.df_Orders.join(self.df_Routes.set_index('CodPieza'), on='CodPieza').sort_values(by=['FechaPedido', 'Fase']).query('Fase == 10').copy(deep=True)  # reset_index().
-        self.df_Events['event']=1
-        self.df_Events['executed']=False
-        self.df_Events['selectedRule']="None"
-        self.df_Events=self.df_Events.reset_index(drop=True).rename(columns = {'FechaPedido':'TEvent'})
-        self.df_Events.loc[:,'TEvent']=pd.to_datetime(self.df_Events.loc[:,'TEvent'])
+        self.df_Events = Orders.join(Routes.set_index('CodPieza'), on='CodPieza').query('Fase == 10')[
+            ['IdPedido', 'FechaPedido', 'Fase','CodMaquina']].copy(deep=True)
+        self.df_Events['indexEvent'] = self.df_Events['IdPedido'].astype(str) + "_" + self.df_Events['Fase'].astype(str)
+        self.df_Events['event'] = 1
+        self.df_Events['executed'] = False
+        self.df_Events = self.df_Events.set_index('indexEvent').rename(columns={'FechaPedido': 'TEvent'})
+        self.df_Events.loc[:, 'TEvent'] = pd.to_datetime(self.df_Events.loc[:, 'TEvent'])
+
+        self.clock = 0
+
 
     def addEvent(self, selectedJob, event, clock, selectedRule="None"):
         
@@ -32,7 +27,7 @@ class eventSimulator():
             self.df_Events = self.df_Events.append(newEvent, ignore_index=True)
             newEvent['event']= 3
             newEvent['executed']=False
-            newEvent['selectedRule']="None"
+            # newEvent['selectedRule']="None"
             newEvent['TEvent']= pd.to_datetime(newEvent['TEvent']) + pd.DateOffset(minutes=newEvent['TPreparacion'] + newEvent['Lote'] * newEvent['TUnitario'])
             newEvent['TEvent'] = newEvent['TEvent'].round('s')
             self.df_Events = self.df_Events.append(newEvent, ignore_index=True).sort_values(by=['TEvent', 'Fase'])
@@ -52,8 +47,8 @@ class eventSimulator():
                 self.df_Events = self.df_Events.append(nextEvent, ignore_index=True).sort_values(by=['TEvent', 'Fase']).reset_index(drop=True)
                 # print("added pedido:" + str(nextEvent['IdPedido'].values[0]) + " fase : " + str(nextEvent['Fase'].values[0]))
     
-    def addEvents(self, selectedJobs):
-        self.df_Events.loc[selectedJobs.index, 'executed'] = True
+    def markExecuted(self, events):
+        self.df_Events.loc[events.index, 'executed'] = True
         
     def nextEvents(self):
         if len(self.df_Events[self.df_Events['executed']==False].sort_values(by=['TEvent','Fase']))>0:
