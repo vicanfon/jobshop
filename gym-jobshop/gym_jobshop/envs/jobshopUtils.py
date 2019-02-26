@@ -20,8 +20,6 @@ class rules(Enum):
     SSRO = 14
     DSRO = 15
 
-
-
 class Machine():
     def __init__(self, id):
         self.idMachine = id

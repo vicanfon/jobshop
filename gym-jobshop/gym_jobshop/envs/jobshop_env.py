@@ -80,7 +80,7 @@ class JobShopEnv(Env):
         # Initialize machine parameters
         self.Buffer = {i[0]: Machine(i[0]) for i in self.df_Machines.values}
 
-        return self.EnvState
+        return self.EnvState # TODO: is this necessary to instantiate EnvState?
 
     def getEvents(self):
         # Get next block of events
@@ -97,7 +97,7 @@ class JobShopEnv(Env):
                                                 jobs['Lote']
         jobs['TiempoOcupacion'] = jobs['TTPreparacion'] + jobs['TTUnitario'] * \
                                                 jobs['Lote']
-        jobs['TiempoRestante'] = jobs['TiempoOcupacion']
+        jobs['TiempoRestante'] = pd.to_datetime(jobs['TiempoOcupacion'])
         jobs['n_pasos_restantes'] = jobs['n_pasos']
         jobs = jobs[['IdPedido','Fase','CodMaquina','FechaPedido','FechaEntrega','FechaCola','TiempoProcesamiento','TiempoOcupacion','TiempoRestante','n_pasos','n_pasos_restantes']]
         self.MachineQueues = self.MachineQueues.append(jobs, ignore_index=True)
@@ -113,18 +113,22 @@ class JobShopEnv(Env):
         self.Buffer[machine].processingJob = -1
 
 
-    def computeState(self):
+    def computeState(self, clock):
         # Compute state of the environment (aka statistics) after assigning work
-        for i in self.Buffer:
-            length = len(self.Buffer[i].queue)
-            self.EnvState.loc[i,'queue_length']= length
-            if length > 0:
-                clock2=pd.to_datetime(self.Buffer[i].queue['FechaCola']).sort_values(ascending = False).iloc[0]
-                difference=clock2-pd.to_datetime(self.Buffer[i].queue['FechaCola'])
-                self.EnvState.loc[i,'avg_waiting_time']=difference.mean().seconds
-            else:
-                self.EnvState.loc[i,'avg_waiting_time']=0
-            self.EnvState.loc[i,'workingOn']=self.Buffer[i].processingJob
+        self.MachineQueues['TiempoEnCola'] = pd.to_datetime(clock) - pd.to_datetime(self.MachineQueues['FechaCola'])
+        self.EnvState = self.MachineQueues.groupby(['CodMaquina']).agg({'Fase':'count','TiempoEnCola':'mean'})
+        self.EnvState.loc[i,'workingOn']=self.Buffer[i].processingJob
+        # 'queue_length', 'avg_waiting_time',
+        # for i in self.Buffer:
+        #     length = len(self.Buffer[i].queue)
+        #     self.EnvState.loc[i,'queue_length']= length
+        #     if length > 0:
+        #         clock2=pd.to_datetime(self.Buffer[i].queue['FechaCola']).sort_values(ascending = False).iloc[0]
+        #         difference=clock2-pd.to_datetime(self.Buffer[i].queue['FechaCola'])
+        #         self.EnvState.loc[i,'avg_waiting_time']=difference.mean().seconds
+        #     else:
+        #         self.EnvState.loc[i,'avg_waiting_time']=0
+        #     self.EnvState.loc[i,'workingOn']=self.Buffer[i].processingJob
 
         return self.EnvState.copy(deep=True)
 

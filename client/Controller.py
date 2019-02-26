@@ -57,7 +57,7 @@ for episode in range(MAX_NUM_EPISODES):
         if len(events[events["event"] == 3]) > 0:
             env.freeMachine(events[events["event"] == 3], clock)  # free machine so that it can take more jobs
 
-        obs = env.computeState()  # TODO: I am updating all states, how to optimize
+        obs = env.computeState(clock)  # TODO: I am updating all states, how to optimize
 
         # if after assigning and liberating there are jobs and the machine is free select next job
         if obs.loc[machine, 'workingOn'] == -1 and obs.loc[machine, 'queue_length'] > 0:
