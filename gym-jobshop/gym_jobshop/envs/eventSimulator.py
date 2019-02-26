@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 
+# event structure: IdPedido TEvent Fase CodMaquina event executed
 
 class eventSimulator():
     def __init__(self, Orders, Routes):
@@ -16,40 +17,33 @@ class eventSimulator():
         self.clock = 0
 
 
-    def addEvent(self, selectedJob, event, clock, selectedRule="None"):
+    def addEvent(self, events, event, clock):
         
         # add new events and mark some to executed
-        if (event==2):
-            newEvent=self.df_Events[self.df_Events['IdPedido']==selectedJob].sort_values(by=['TEvent', 'Fase']).query("executed==True").iloc[-1].copy(deep=True)
-            newEvent['event']=2
-            newEvent['selectedRule']=selectedRule
-            newEvent['TEvent']=pd.to_datetime(clock)
-            self.df_Events = self.df_Events.append(newEvent, ignore_index=True)
-            newEvent['event']= 3
-            newEvent['executed']=False
-            # newEvent['selectedRule']="None"
-            newEvent['TEvent']= pd.to_datetime(newEvent['TEvent']) + pd.DateOffset(minutes=newEvent['TPreparacion'] + newEvent['Lote'] * newEvent['TUnitario'])
-            newEvent['TEvent'] = newEvent['TEvent'].round('s')
-            self.df_Events = self.df_Events.append(newEvent, ignore_index=True).sort_values(by=['TEvent', 'Fase'])
+        if (event==1):
+            self.df_Events.loc[events.index, 'executed'] = True
+        elif (event == 2):
+            # newEvent=self.df_Events[self.df_Events['IdPedido'] == events].sort_values(by=['TEvent', 'Fase']).query("executed==True").iloc[-1].copy(deep=True)
+            newEvents2 = events.copy(deep=True)
+            newEvents2[:,'event']=2
+            newEvents2[:, 'TEvent']=pd.to_datetime(clock)
+            self.df_Events = self.df_Events.append(newEvents2)
+            # newEvent['selectedRule']=selectedRule
+            newEvents3 = events.copy(deep=True)
+            newEvents3[:, 'event'] = 3
+            newEvents3[:, 'executed']=False
+            newEvents3[:, 'TEvent'] = pd.to_datetime(clock)
+            self.df_Events = self.df_Events.append(newEvents3)
+            # TODO: round time with newEvent['TEvent'] = newEvent['TEvent'].round('s')
         elif (event==3):
-            self.df_Events.loc[(self.df_Events['IdPedido']==selectedJob) & (self.df_Events['event']==3) & (self.df_Events['executed']==False),'executed']=True
-            newEvent = self.df_Events.loc[(self.df_Events['IdPedido']==selectedJob) & (self.df_Events['event']==3)].sort_values(by=['TEvent', 'Fase']).iloc[-1]
-            # add here next event (phase)
-            newFase = newEvent['Fase'] + 10
-            nextEvent=self.df_Orders[self.df_Orders['IdPedido']==selectedJob].join(self.df_Routes.set_index('CodPieza'), on='CodPieza').query('Fase == '+ str(newFase))
-            if len(nextEvent)>0:
-                nextEvent['event']=1
-                nextEvent['executed']=False
-                nextEvent['selectedRule']="None"
-                nextEvent=nextEvent.rename(columns = {'FechaPedido':'TEvent'})
-                nextEvent['TEvent']= newEvent['TEvent']
+            self.df_Events.loc[events.index, 'executed'] = True
+            newEvents1 = events.copy(deep=True)
+            newEvents1[:, 'event'] = 1
+            newEvents1[:, 'Fase'] += 10
+            newEvents1[:, 'executed'] = False
+            # compare Fase with end and add only the needed
+            self.df_Events = self.df_Events.append(newEvents1)
 
-                self.df_Events = self.df_Events.append(nextEvent, ignore_index=True).sort_values(by=['TEvent', 'Fase']).reset_index(drop=True)
-                # print("added pedido:" + str(nextEvent['IdPedido'].values[0]) + " fase : " + str(nextEvent['Fase'].values[0]))
-    
-    def markExecuted(self, events):
-        self.df_Events.loc[events.index, 'executed'] = True
-        
     def nextEvents(self):
         if len(self.df_Events[self.df_Events['executed']==False].sort_values(by=['TEvent','Fase']))>0:
             self.clock=self.df_Events[self.df_Events['executed']==False].sort_values(by=['TEvent','Fase']).iloc[0]['TEvent']

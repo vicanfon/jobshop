@@ -51,7 +51,7 @@ class JobShopEnv(Env):
 
         job = self.Buffer[action[0]].selectJob(action[1])
         
-        self._computeState()
+        self.computeState()
         obs = self.EnvState.copy(deep=True)
         reward = self._get_reward()
         episode_over = False
@@ -69,6 +69,9 @@ class JobShopEnv(Env):
         # reset event simulator
         self.eventSimulator = eventSimulator(self.df_Orders, self.df_Routes)
 
+        # Init the Global queue
+        self.MachineQueues = pd.DataFrame(columns={'IdPedido','Fase','CodMaquina','FechaPedido','FechaEntrega','FechaCola','TiempoProcesamiento','TiempoOcupacion','TiempoRestante','n_pasos','n_pasos_restantes'})
+
         # Initialize status of the environment. Status of machine: queue_length and avg_waiting_time. Status of env: todo
         self.EnvState = pd.DataFrame(columns={'queue_length','avg_waiting_time', 'workingOn'},index=self.df_Machines.values[:,0])
         self.EnvState['queue_length']=0
@@ -85,7 +88,7 @@ class JobShopEnv(Env):
 
         return self.df_Events.query("executed == False & TEvent == '" + self.clock +"'")[['TEvent','event','IdPedido','CodPieza','CodMaquina']]
     
-    def assignJobs(self, machine, events, clock):
+    def assignJobs(self, events, clock):
         # Assign jobs to machine queue
         jobs = events.join(self.df_Orders.set_index('IdPedido'), on='IdPedido').merge(self.df_Routes, left_on=['CodPieza','Fase','CodMaquina'], right_on=['CodPieza','Fase','CodMaquina']).copy(deep=True)
         # jobs['TiempoProcesamiento'] = jobs['TPreparacion']+jobs['TUnitario']*jobs['Lote']
@@ -96,18 +99,17 @@ class JobShopEnv(Env):
                                                 jobs['Lote']
         jobs['TiempoRestante'] = jobs['TiempoOcupacion']
         jobs['n_pasos_restantes'] = jobs['n_pasos']
-        jobs = jobs[['IdPedido','FechaPedido','FechaEntrega','FechaCola','TiempoProcesamiento','TiempoOcupacion','TiempoRestante','n_pasos','n_pasos_restantes']]
+        jobs = jobs[['IdPedido','Fase','CodMaquina','FechaPedido','FechaEntrega','FechaCola','TiempoProcesamiento','TiempoOcupacion','TiempoRestante','n_pasos','n_pasos_restantes']]
+        self.MachineQueues = self.MachineQueues.append(jobs, ignore_index=True)
         # add new jobs
-        self.Buffer[machine].queue= self.Buffer[machine].queue.append(jobs, ignore_index=True)
+        # self.Buffer[machine].queue= self.Buffer[machine].queue.append(jobs, ignore_index=True)
 
-        # self.Buffer[i[6]].queue=self.Buffer[i[6]].queue.append({'id':i[0],'phase':i[7],'lote':i[2],'tp': i[8],'tu': i[9],'queueDate':clock,'arrivalDate':i[3],'idOrder':i[0],'operationTime': i[8]+i[2]*i[9],'deliverDate':i[4], 'remainingSteps': i[10]-int(i[7]/10)}, ignore_index=True) # assign piece to queue
-
-        self.eventSimulator.markExecuted(events)
+        self.eventSimulator.addEvent(events, 1, clock)
 
 
-    def freeMachine(self, machine, clock):
+    def freeMachine(self, events, clock):
         # Assign Events to Machine queues
-        self.eventSimulator.addEvent(self.Buffer[machine].processingJob, 3, clock)  # update 3 to executed
+        self.eventSimulator.addEvent(events, 3, clock)  # update 3 to executed
         self.Buffer[machine].processingJob = -1
 
 
