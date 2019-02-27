@@ -26,7 +26,7 @@ class machineNN():
     
     def selectJobNN(self, machinesStatus):
         if np.random.random() < self.eps:
-            a = np.random.randint(0, self.n_outputs-1)
+            a = np.random.randint(1, self.n_outputs-1)
         else:
             a = np.argmax(self.model.predict(machinesStatus.values.reshape(1,self.n_inputs)))
         return a

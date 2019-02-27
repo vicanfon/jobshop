@@ -59,13 +59,11 @@ for episode in range(MAX_NUM_EPISODES):
 
         obs = env.computeState(clock)  # TODO: I am updating all states, how to optimize
 
-        # if after assigning and liberating there are jobs and the machine is free select next job
-        if obs.loc[machine, 'workingOn'] == -1 and obs.loc[machine, 'queue_length'] > 0:
-            selectedRule = machinesNN[machine].selectJobNN(
-                obs.loc[machine].drop(labels='workingOn'))  # selected job is a rule here (1 of 16), not a specific one
-            nobs, reward, episode_over, info = env.step((machine, selectedRule, clock))  # pass action
-            machinesNN[machine].trainNN(obs.loc[machine].drop(labels='workingOn'),
-                                        nobs.loc[machine].drop(labels='workingOn'), reward)
+        # obs has the list of machines that are free to process new jobs
+        for machine, row in obs.iterrows():
+            selectedRule = machinesNN[machine].selectJobNN(row)  # selected job is a rule here (1 of 16), not a specific one
+            nobs, reward, episode_over, info = env.step((machine, selectedRule, clock))  # TODO: pass array of selectedRules with all the machines at the same time
+            machinesNN[machine].trainNN(row, nobs, reward)   # TODO: aqui devuelvo 0, nada, que hago?
             # obs=nobs.copy(deep=True)
         # next clock iteration
     clock, events = env.nextEvents()

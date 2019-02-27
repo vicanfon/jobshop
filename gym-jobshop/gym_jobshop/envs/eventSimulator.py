@@ -6,6 +6,7 @@ import numpy as np
 class eventSimulator():
     def __init__(self, Orders, Routes):
         # Initialize list of events
+        self.Routes = Routes
         self.df_Events = Orders.join(Routes.set_index('CodPieza'), on='CodPieza').query('Fase == 10')[
             ['IdPedido', 'FechaPedido', 'Fase','CodMaquina']].copy(deep=True)
         self.df_Events['indexEvent'] = self.df_Events['IdPedido'].astype(str) + "_" + self.df_Events['Fase'].astype(str)
@@ -16,6 +17,17 @@ class eventSimulator():
 
         self.clock = 0
 
+
+    def createEvents(self, pedidos):
+        # pedidos: 'IdPedido', 'FechaPedido', 'Fase','CodMaquina'
+
+        self.df_Events = pedidos.join(self.Routes.set_index('CodPieza'), on={'CodPieza','Lote'}).query('Fase == 10')[
+            ['IdPedido', 'FechaPedido', 'Fase', 'CodMaquina']].copy(deep=True)
+        self.df_Events['indexEvent'] = self.df_Events['IdPedido'].astype(str) + "_" + self.df_Events['Fase'].astype(str)
+        self.df_Events['event'] = 1
+        self.df_Events['executed'] = False
+        self.df_Events = self.df_Events.set_index('indexEvent').rename(columns={'FechaPedido': 'TEvent'})
+        self.df_Events.loc[:, 'TEvent'] = pd.to_datetime(self.df_Events.loc[:, 'TEvent'])
 
     def addEvent(self, events, event, clock):
         
