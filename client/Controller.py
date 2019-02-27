@@ -49,6 +49,7 @@ for episode in range(MAX_NUM_EPISODES):
     clock, events = env.nextEvents()
 
     while (len(events) > 0):
+        # TODO: could I move this code to nextEvents? and do the while agains episode over?
         # event 1: load jobs that arrive at this time
         if len(events[events["event"] == 1]) > 0:
             env.assignJobs(events[events["event"] == 1], clock)

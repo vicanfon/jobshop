@@ -18,16 +18,18 @@ class eventSimulator():
         self.clock = 0
 
 
-    def createEvents(self, pedidos):
+    def createEvents(self, pedidos, eventtype, clock):
         # pedidos: 'IdPedido', 'FechaPedido', 'Fase','CodMaquina'
 
-        self.df_Events = pedidos.join(self.Routes.set_index('CodPieza'), on={'CodPieza','Lote'}).query('Fase == 10')[
-            ['IdPedido', 'FechaPedido', 'Fase', 'CodMaquina']].copy(deep=True)
-        self.df_Events['indexEvent'] = self.df_Events['IdPedido'].astype(str) + "_" + self.df_Events['Fase'].astype(str)
-        self.df_Events['event'] = 1
-        self.df_Events['executed'] = False
-        self.df_Events = self.df_Events.set_index('indexEvent').rename(columns={'FechaPedido': 'TEvent'})
-        self.df_Events.loc[:, 'TEvent'] = pd.to_datetime(self.df_Events.loc[:, 'TEvent'])
+        # self.df_Events = pedidos.join(self.Routes.set_index('CodPieza'), on={'CodPieza','Lote'}).query('Fase == 10')[
+        #     ['IdPedido', 'FechaPedido', 'Fase', 'CodMaquina']].copy(deep=True)
+        pedidos = pedidos[['IdPedido', 'Fase', 'CodMaquina']]
+        pedidos['indexEvent'] = pedidos['IdPedido'].astype(str) + "_" + pedidos['Fase'].astype(str)
+        pedidos['event'] = eventtype
+        pedidos['executed'] = False
+        pedidos['TEvent'] = pd.to_datetime(clock)
+        return  pedidos.set_index('indexEvent')
+
 
     def addEvent(self, events, event, clock):
         

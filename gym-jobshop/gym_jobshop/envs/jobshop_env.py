@@ -63,13 +63,13 @@ class JobShopEnv(Env):
     def step(self, action):
         # action is a tuple (machine, selectedRule, clock)
 
-        job = self._selectJob(action[0],action[1])
+        job = self._selectJob(action[0],action[1])    # TODO: how to to this with a list
         obs = self.computeState(action[2])
         reward = self._get_reward(action[0])
         episode_over = False
         # update the event 2
         # events, event, clock
-        self.eventSimulator.addEvent(job, 2, action[2])
+        self.eventSimulator.addEvent(self.eventSimulator.createEvents(job, 2, action[2]), 2, action[2])
         # TODO: add history here to register what rule I have selected
 
         return obs, reward, episode_over, {}
