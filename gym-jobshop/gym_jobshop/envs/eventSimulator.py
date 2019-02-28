@@ -23,7 +23,7 @@ class eventSimulator():
         pedidos['indexEvent'] = pedidos['IdPedido'].astype(str) + "_" + pedidos['Fase'].astype(str)
         pedidos['event'] = eventtype
         pedidos['executed'] = False
-        pedidos['TEvent'] = pd.to_datetime(clock)
+        pedidos['TEvent'] = clock
         return pedidos.set_index('indexEvent')
 
     def processEvents(self, events):
@@ -45,4 +45,4 @@ class eventSimulator():
         return self.clock, result
     
     def history(self):
-        return self.df_Events
+        return self.df_Events.sort_values(by=['TEvent', 'Fase']).copy(deep=True)

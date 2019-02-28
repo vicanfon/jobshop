@@ -24,7 +24,7 @@ df_Routes = pd.read_csv("./data/Routes.csv", delimiter=',')
 env.setEnv(df_Machines, df_Products, df_Routes, df_Orders)
 
 n_obs=2
-n_rules=5
+n_rules=4
 
 
 # list of machineNN
@@ -35,7 +35,6 @@ if my_file.is_file():
     for i in df_Machines['CodMaquina']:
         machinesNN[i].loadModel(i)
 
-eSimulator = 0
 reward_history = []
 
 MAX_NUM_EPISODES = 20
@@ -68,7 +67,8 @@ for episode in range(MAX_NUM_EPISODES):
 
         # next clock iteration
         clock, events = env.nextEvents()
-    time = eSimulator.history().iloc[-1].TEvent - eSimulator.history().iloc[0].TEvent
+    eventsHistory = env.eventsHistory()
+    time = eventsHistory.iloc[-1].TEvent - eventsHistory.iloc[0].TEvent
     totalReward=0
     for i in df_Machines['CodMaquina']:
         totalReward += machinesNN[i].getMachineTReward()
@@ -85,7 +85,7 @@ for i in df_Machines['CodMaquina']:
 plt.plot(reward_history)
 plt.show()
 
-eSimulator.history().to_excel("outputNN.xlsx")
+env.eventsHistory().to_excel("outputNN.xlsx")
 
 print('finished')
 winsound.PlaySound('SystemExclamation', winsound.SND_FILENAME)
