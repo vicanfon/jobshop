@@ -49,7 +49,7 @@ for episode in range(MAX_NUM_EPISODES):
     clock, events = env.nextEvents()
 
     while (len(events) > 0):
-        # TODO: could I move this code to nextEvents? and do the while agains episode over?
+        # TODO: could I move this code to env.reset before returning the obs and let only the lines after obs
         # event 1: load jobs that arrive at this time
         if len(events[events["event"] == 1]) > 0:
             env.assignJobs(events[events["event"] == 1], clock)
@@ -58,16 +58,16 @@ for episode in range(MAX_NUM_EPISODES):
         if len(events[events["event"] == 3]) > 0:
             env.freeMachine(events[events["event"] == 3], clock)  # free machine so that it can take more jobs
 
-        obs = env.computeState(clock)  # TODO: I am updating all states, how to optimize
+        obs = env.computeState(clock)
 
         # obs has the list of machines that are free to process new jobs
         for machine, row in obs.iterrows():
             selectedRule = machinesNN[machine].selectJobNN(row)  # selected job is a rule here (1 of 16), not a specific one
             nobs, reward, episode_over, info = env.step((machine, selectedRule, clock))  # TODO: pass array of selectedRules with all the machines at the same time
             machinesNN[machine].trainNN(row, nobs, reward)   # TODO: aqui devuelvo 0, nada, que hago?
-            # obs=nobs.copy(deep=True)
+
         # next clock iteration
-    clock, events = env.nextEvents()
+        clock, events = env.nextEvents()
     time = eSimulator.history().iloc[-1].TEvent - eSimulator.history().iloc[0].TEvent
     totalReward=0
     for i in df_Machines['CodMaquina']:

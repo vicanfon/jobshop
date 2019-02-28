@@ -9,22 +9,21 @@ from gym_jobshop.envs.eventSimulator import eventSimulator
 
 
 class rules(Enum):
-    RANDOM = 0
-    FIFO = 1
-    LIFO = 2
-    SOT = 3
-    LOT = 4
-    SROT = 5
-    LROT = 6
-    LRO = 7
-    MRO = 8
-    DD = 9
-    SS = 10
-    DS = 11
-    SSROT = 12
-    DSROT = 13
-    SSRO = 14
-    DSRO = 15
+    FIFO = 0
+    LIFO = 1
+    SOT = 2
+    LOT = 3
+    SROT = 4
+    LROT = 5
+    LRO = 6
+    MRO = 7
+    DD = 8
+    SS = 9
+    DS = 10
+    SSROT = 11
+    DSROT = 12
+    SSRO = 13
+    DSRO = 14
 
 class JobShopEnv(Env):
     metadata = {'render.modes': ['human']}
@@ -64,20 +63,29 @@ class JobShopEnv(Env):
         # action is a tuple (machine, selectedRule, clock)
 
         job = self._selectJob(action[0],action[1])    # TODO: how to to this with a list
+        self.MachineProcessing.loc[job['CodMaquina'],'IdPedido'] = job['IdPedido'].values
         obs = self.computeState(action[2])
+        obs = obs if len(obs)>0 else pd.DataFrame([(0.0,0.0)], columns={'queue_length', 'avg_waiting_time'})
         reward = self._get_reward(action[0])
         episode_over = False
-        # update the event 2
+
         # events, event, clock
-        self.eventSimulator.addEvent(self.eventSimulator.createEvents(job, 2, action[2]), 2, action[2])
+        newEvents2 = self.eventSimulator.createEvents(job, 2, action[2])
+        self.eventSimulator.addEvents(newEvents2)
+        self.eventSimulator.processEvents(newEvents2)
+        clock3 = (pd.to_datetime(action[2])+pd.to_timedelta(newEvents2.merge(job, left_on=['IdPedido'], right_on=['IdPedido'])['TiempoProcesamiento'],unit='m')).astype('datetime64[s]')
+        self.eventSimulator.addEvents(self.eventSimulator.createEvents(job, 3, clock3))
+        jobs1= job.copy(deep=True)
+        jobs1['Fase'] += 10
+        jobs1['n_pasos_restantes'] -= 1
+        self.eventSimulator.addEvents(self.eventSimulator.createEvents(jobs1[jobs1['n_pasos_restantes']>0], 1, clock3))
         # TODO: add history here to register what rule I have selected
 
         return obs, reward, episode_over, {}
 
     def _get_reward(self, machine):
         """ Compute the av_waiting time """
-        # print (self.EnvState['avg_waiting_time'].mean())
-        if len(self.EnvState)>0 and len(self.EnvState.loc[machine])>0:
+        if machine in self.EnvState.index:
             return - self.EnvState.loc[machine,'avg_waiting_time']
         else:
             return 0
@@ -91,23 +99,14 @@ class JobShopEnv(Env):
         self.MachineProcessing = pd.DataFrame(columns={'IdPedido'}, index=self.df_Machines.values[:,0], dtype=np.int8)
         self.MachineProcessing['IdPedido']=-1
 
-        # Initialize status of the environment. Status of machine: queue_length and avg_waiting_time. Status of env: todo
-        # self.EnvState = pd.DataFrame(columns={'queue_length','avg_waiting_time'},index=self.df_Machines.values[:,0])
-        # self.EnvState['queue_length']=0
-        # self.EnvState['avg_waiting_time']=0
+        # Status of machine: queue_length and avg_waiting_time. Status of env: . As many rows as machines
         self.EnvState = pd.DataFrame(columns={'queue_length', 'avg_waiting_time'})
 
         return self.EnvState.copy(deep=True)
 
-    def getEvents(self):
-        # Get next block of events
-        self.clock=self.df_Events[self.df_Events['executed']==False].sort_values(by=['TEvent','Fase']).iloc[0]['TEvent']
-
-        return self.df_Events.query("executed == False & TEvent == '" + self.clock +"'")[['TEvent','event','IdPedido','CodPieza','CodMaquina']]
-    
     def assignJobs(self, events, clock):
         # Assign jobs to machine queue
-        jobs = events.join(self.df_Orders.set_index('IdPedido'), on='IdPedido').merge(self.df_Routes, left_on=['CodPieza','Fase','CodMaquina'], right_on=['CodPieza','Fase','CodMaquina']).copy(deep=True)
+        jobs = events.join(self.df_Orders.set_index('IdPedido'), on='IdPedido').merge(self.df_Routes, left_on=['CodPieza','Fase'], right_on=['CodPieza','Fase']).copy(deep=True)
         # jobs['TiempoProcesamiento'] = jobs['TPreparacion']+jobs['TUnitario']*jobs['Lote']
         jobs['FechaCola'] = pd.to_datetime(clock)
         jobs['TiempoProcesamiento'] = jobs['TPreparacion'] + jobs['TUnitario'] * \
@@ -120,13 +119,13 @@ class JobShopEnv(Env):
         # add new jobs
         self.MachineQueues = self.MachineQueues.append(jobs, ignore_index=True)
 
-        self.eventSimulator.addEvent(events, 1, clock)
-
+        self.eventSimulator.processEvents(events)
 
     def freeMachine(self, events, clock):
         # Assign Events to Machine queues
-        self.eventSimulator.addEvent(events, 3, clock)  # update 3 to executed
+        self.eventSimulator.processEvents(events)  # update 3 to executed
         self.MachineProcessing.loc[events.index,"IdPedido"] = -1
+
 
     def computeState(self, clock):
         # Compute state of the environment (aka statistics) after assigning work
@@ -136,7 +135,7 @@ class JobShopEnv(Env):
         # envstate: 'queue_length', 'avg_waiting_time',
         # computedResult: 'queue_length', 'avg_waiting_time',
 
-        return self.EnvState.join(self.MachineProcessing).query("IdPedido == -1")[['avg_waiting_time','queue_length']].copy(deep=True)
+        return self.EnvState.join(self.MachineProcessing).query("IdPedido == -1")[['avg_waiting_time','queue_length']].copy(deep=True) if len(self.EnvState.join(self.MachineProcessing))>0 else pd.DataFrame()
 
 
     def render(self, mode='human', close=False):
@@ -150,9 +149,7 @@ class JobShopEnv(Env):
         queue = self.MachineQueues[self.MachineQueues['CodMaquina'] == machine]
         chosen = []
         # todo: compute dynamic attributes
-        if idRule == rules.RANDOM.value:
-            chosen = queue.sample(n=1)
-        elif idRule == rules.FIFO.value:
+        if idRule == rules.FIFO.value:
             chosen = pd.DataFrame([queue.sort_values(by=['FechaCola']).iloc[0]])
         elif idRule == rules.LIFO.value:
             chosen = pd.DataFrame([queue.sort_values(by=['FechaCola']).iloc[-1]])
