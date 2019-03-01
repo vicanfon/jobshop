@@ -37,7 +37,7 @@ if my_file.is_file():
 
 reward_history = []
 
-MAX_NUM_EPISODES = 20
+MAX_NUM_EPISODES = 1
 
 for episode in range(MAX_NUM_EPISODES):
     print("episode: "+str(episode))
@@ -61,14 +61,16 @@ for episode in range(MAX_NUM_EPISODES):
 
         # obs has the list of machines that are free to process new jobs
         for machine, row in obs.iterrows():
-            selectedRule = machinesNN[machine].selectJobNN(row)  # selected job is a rule here (1 of 16), not a specific one
+            # selectedRule = machinesNN[machine].selectJobNN(row)  # selected job is a rule here (1 of 16), not a specific one
+            selectedRule = 0
             nobs, reward, episode_over, info = env.step((machine, selectedRule, clock))  # TODO: pass array of selectedRules with all the machines at the same time
-            machinesNN[machine].trainNN(row, nobs, reward)   # TODO: aqui devuelvo 0, nada, que hago?
+            # machinesNN[machine].trainNN(row, nobs, reward)   # TODO: aqui devuelvo 0, nada, que hago?
 
         # next clock iteration
         clock, events = env.nextEvents()
     eventsHistory = env.eventsHistory()
     time = eventsHistory.iloc[-1].TEvent - eventsHistory.iloc[0].TEvent
+    env.eventsHistory().to_excel("outputNN.xlsx")
     totalReward=0
     for i in df_Machines['CodMaquina']:
         totalReward += machinesNN[i].getMachineTReward()

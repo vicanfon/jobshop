@@ -74,7 +74,9 @@ class JobShopEnv(Env):
         newEvents2 = self.eventSimulator.createEvents(job, 2, action[2])
         self.eventSimulator.addEvents(newEvents2)
         self.eventSimulator.processEvents(newEvents2)
-        clock3 = (pd.to_datetime(action[2])+pd.to_timedelta(newEvents2.merge(job, left_on=['IdPedido'], right_on=['IdPedido'])['TiempoProcesamiento'],unit='m'))    # .astype('datetime64[s]')
+        # clock3 = (pd.to_datetime(action[2])+pd.to_timedelta(newEvents2.merge(job, left_on=['IdPedido'], right_on=['IdPedido'])['TiempoProcesamiento'],unit='m')).astype('datetime64[s]')
+        clock3 = pd.to_datetime(action[2]) + pd.DateOffset(minutes=int(newEvents2.merge(job, left_on=['IdPedido'], right_on=['IdPedido'])['TiempoProcesamiento']))
+        clock3 = clock3.round('s')
         self.eventSimulator.addEvents(self.eventSimulator.createEvents(job, 3, clock3))
         jobs1= job.copy(deep=True)
         jobs1['Fase'] += 10
@@ -115,7 +117,7 @@ class JobShopEnv(Env):
         jobs['TiempoOcupacion'] = jobs['TTPreparacion'] + jobs['TTUnitario'] * \
                                                 jobs['Lote']
         jobs['TiempoRestante'] = pd.to_datetime(jobs['TiempoOcupacion'])
-        jobs['n_pasos_restantes'] = jobs['n_pasos']-int(jobs['Fase'])/10
+        jobs['n_pasos_restantes'] = jobs['n_pasos']-(jobs['Fase'].astype('int')/10).astype('int')
         jobs = jobs[['IdPedido','Fase','CodMaquina','FechaPedido','FechaEntrega','FechaCola','TiempoProcesamiento','TiempoOcupacion','TiempoRestante','n_pasos','n_pasos_restantes']]
         # add new jobs
         self.MachineQueues = self.MachineQueues.append(jobs, ignore_index=True)
