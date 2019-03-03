@@ -45,4 +45,4 @@ class eventSimulator():
         return self.clock, result
     
     def history(self):
-        return self.df_Events.sort_values(by=['TEvent', 'Fase']).copy(deep=True)
+        return self.df_Events.copy(deep=True)
