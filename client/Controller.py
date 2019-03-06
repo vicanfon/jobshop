@@ -27,7 +27,7 @@ n_obs=2
 n_rules=4
 
 
-# list of machineNN
+# machineNN
 machinesNN = {i[0]: machineNN(n_obs, n_rules) for i in df_Machines.values}
 
 my_file = Path("modelM01.h5")
