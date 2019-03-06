@@ -75,8 +75,8 @@ class JobShopEnv(Env):
         self.eventSimulator.addEvents(newEvents2)
         self.eventSimulator.processEvents(newEvents2)
         # clock3 = (pd.to_datetime(action[2])+pd.to_timedelta(newEvents2.merge(job, left_on=['IdPedido'], right_on=['IdPedido'])['TiempoProcesamiento'],unit='m')).astype('datetime64[s]')
-        clock3 = pd.to_datetime(action[2]) + pd.DateOffset(minutes=int(newEvents2.merge(job, left_on=['IdPedido'], right_on=['IdPedido'])['TiempoProcesamiento']))
-        clock3 = clock3.round('s')
+        clock3 = (pd.to_datetime(action[2])+pd.to_timedelta(job['TiempoProcesamiento'],unit='m')).astype("datetime64[s]")
+        # clock3 = clock3.round('s')
         self.eventSimulator.addEvents(self.eventSimulator.createEvents(job, 3, clock3))
         jobs1= job.copy(deep=True)
         jobs1['Fase'] += 10
