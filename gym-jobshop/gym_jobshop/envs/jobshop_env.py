@@ -33,7 +33,6 @@ class JobShopEnv(Env):
         # coger una máquina y una de las 16 reglas de secuenciación
         self.action_space = spaces.Tuple((spaces.Discrete(5), spaces.Discrete(5))) # todo now five rules
         # state with lenght of the queue and  y del trabajo
-        # self.observation_space = spaces.Box(0,np.inf, shape=(1,0), dtype = np.int16), "av_waiting_time": spaces.Box(0,np.inf, shape=(1,0), dtype = np.int16)})
         self.observation_space = spaces.Box(0,np.inf, shape=(10,3), dtype = np.int16) # 'queue_length','avg_waiting_time', 'workingOn'
         # self.seed()
 
@@ -108,7 +107,16 @@ class JobShopEnv(Env):
         self.EnvState = pd.DataFrame(columns={'queue_length', 'avg_waiting_time'})
 
         return self.EnvState.copy(deep=True)
+    def loop_of_events(self):
+        # event 1: load jobs that arrive at this time
+        if len(events[events["event"] == 1]) > 0:
+            env.assignJobs(events[events["event"] == 1], clock)
 
+        # event 3: free the machine if a job just finished
+        if len(events[events["event"] == 3]) > 0:
+            env.freeMachine(events[events["event"] == 3], clock)  # free machine so that it can take more jobs
+
+        obs = env.computeState(clock)
     def assignJobs(self, events, clock):
         # Assign jobs to machine queue
         jobs = events.join(self.df_Orders.set_index('IdPedido'), on='IdPedido').merge(self.df_Routes, left_on=['CodPieza','Fase'], right_on=['CodPieza','Fase']).copy(deep=True)
