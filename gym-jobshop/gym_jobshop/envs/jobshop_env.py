@@ -60,22 +60,24 @@ class JobShopEnv(Env):
     def __del__(self):
         pass
 
-    def step(self, action):
+    def step(self, actions):
         # action is a tuple (machine, selectedRule, clock)
-
-        job = self._selectJob(action[0],action[1])    # TODO: how to to this with a list
-        self.MachineProcessing.loc[job['CodMaquina'],'IdPedido'] = job['IdPedido'].values
-        obs = self.computeState(action[2])
+        clock = 0
+        for action in actions:
+            clock=action[2]
+            job = self._selectJob(action[0],action[1])    # TODO: how to to this with a list
+            self.MachineProcessing.loc[job['CodMaquina'],'IdPedido'] = job['IdPedido'].values
+        obs = self.computeState(clock)
         obs = obs if len(obs)>0 else pd.DataFrame([(0.0,0.0)], columns={'queue_length', 'avg_waiting_time'})
-        reward = self._get_reward(action[0])
+        reward = self._get_reward(clock)
         episode_over = False
 
         # events, event, clock
-        newEvents2 = self.eventSimulator.createEvents(job, 2, action[2])
+        newEvents2 = self.eventSimulator.createEvents(job, 2, clock)
         self.eventSimulator.addEvents(newEvents2)
         self.eventSimulator.processEvents(newEvents2)
         # clock3 = (pd.to_datetime(action[2])+pd.to_timedelta(newEvents2.merge(job, left_on=['IdPedido'], right_on=['IdPedido'])['TiempoProcesamiento'],unit='m')).astype('datetime64[s]')
-        clock3 = (pd.to_datetime(action[2])+pd.to_timedelta(job['TiempoProcesamiento'],unit='m')).astype("datetime64[s]")
+        clock3 = (pd.to_datetime(clock)+pd.to_timedelta(job['TiempoProcesamiento'],unit='m')).astype("datetime64[s]")
         # clock3 = clock3.round('s')
         self.eventSimulator.addEvents(self.eventSimulator.createEvents(job, 3, clock3))
         jobs1= job.copy(deep=True)

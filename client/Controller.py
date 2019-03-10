@@ -59,11 +59,12 @@ for episode in range(MAX_NUM_EPISODES):
 
         obs = env.computeState(clock)
 
+        selectedRules=[]
         # obs has the list of machines that are free to process new jobs
         for machine, row in obs.iterrows():
-            # selectedRule = machinesNN[machine].selectJobNN(row)  # selected job is a rule here (1 of 16), not a specific one
-            selectedRule = 0
-            nobs, reward, episode_over, info = env.step((machine, selectedRule, clock))  # TODO: pass array of selectedRules with all the machines at the same time
+            selectedRule = machinesNN[machine].selectJobNN(row)  # selected job is a rule here (1 of 16), not a specific one
+            selectedRules.append((machine,selectedRule,clock))
+        nobs, reward, episode_over, info = env.step(selectedRules)  # TODO: pass array of selectedRules with all the machines at the same time
             # machinesNN[machine].trainNN(row, nobs, reward)   # TODO: aqui devuelvo 0, nada, que hago?
 
         # next clock iteration
