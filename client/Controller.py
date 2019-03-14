@@ -43,32 +43,18 @@ for episode in range(MAX_NUM_EPISODES):
     print("episode: "+str(episode))
     # reset the environment and get the status of the environment
     obs = env.reset()
-    
-    # Get next tick and list of events on that tick
-    clock, events = env.nextEvents()
 
-    while (len(events) > 0):
-        # TODO: could I move this code to env.reset before returning the obs and let only the lines after obs
-        # event 1: load jobs that arrive at this time
-        if len(events[events["event"] == 1]) > 0:
-            env.assignJobs(events[events["event"] == 1], clock)
+    episode_over = False
 
-        # event 3: free the machine if a job just finished
-        if len(events[events["event"] == 3]) > 0:
-            env.freeMachine(events[events["event"] == 3], clock)  # free machine so that it can take more jobs
-
-        obs = env.computeState(clock)
-
-        selectedRules=[]
+    while not episode_over:
         # obs has the list of machines that are free to process new jobs
+        selectedRules=[]
         for machine, row in obs.iterrows():
-            selectedRule = machinesNN[machine].selectJobNN(row)  # selected job is a rule here (1 of 16), not a specific one
-            selectedRules.append((machine,selectedRule,clock))
-        nobs, reward, episode_over, info = env.step(selectedRules)  # TODO: pass array of selectedRules with all the machines at the same time
+            # selectedRule = machinesNN[machine].selectJobNN(row)  # selected job is a rule here (1 of 16), not a specific one
+            selectedRules.append((machine,1))
+        obs, reward, episode_over, info = env.step(selectedRules)
             # machinesNN[machine].trainNN(row, nobs, reward)   # TODO: aqui devuelvo 0, nada, que hago?
 
-        # next clock iteration
-        clock, events = env.nextEvents()
     eventsHistory = env.eventsHistory()
     time = eventsHistory.iloc[-1].TEvent - eventsHistory.iloc[0].TEvent
     env.eventsHistory().to_excel("outputNN.xlsx")
