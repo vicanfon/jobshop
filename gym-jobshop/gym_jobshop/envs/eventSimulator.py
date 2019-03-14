@@ -19,20 +19,21 @@ class eventSimulator():
 
     def createEvents(self, pedidos, eventtype, clock):
         # pedidos: 'IdPedido', 'FechaPedido', 'Fase','CodMaquina'
-        if len(pedidos)>0:
-            pedidos = pedidos[['IdPedido', 'Fase']]
-            pedidos['indexEvent'] = pedidos['IdPedido'].astype(str) + "_" + pedidos['Fase'].astype(str)
-            pedidos['event'] = eventtype
-            pedidos['executed'] = False
-            pedidos['TEvent'] = clock
-            return pedidos.set_index('indexEvent')
+        #if len(pedidos)>0:
+            # pedidos = pedidos[['IdPedido', 'Fase']]
+            # pedidos = pedidos[['IdPedido', 'Fase', 'event','executed','TEvent']] todo: borrar esta
+        pedidos['indexEvent'] = pedidos['IdPedido'].astype(str) + "_" + pedidos['Fase'].astype(str)
+        pedidos['event'] = eventtype
+        pedidos['executed'] = False
+        pedidos['TEvent'] = clock
+        return pedidos.set_index('indexEvent')
 
     def processEvents(self, events):
         self.df_Events.loc[events.index, 'executed'] = True
 
     def addEvents(self, events):
         # add new events and mark some to executed
-        self.df_Events = self.df_Events.append(events)
+        self.df_Events = self.df_Events.append(events[['IdPedido', 'TEvent', 'Fase', 'event','executed']])
 
     def nextEvents(self):
         eventsNonProcessed=self.df_Events[self.df_Events['executed'] == False].sort_values(by=['TEvent', 'Fase'])

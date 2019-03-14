@@ -51,7 +51,7 @@ for episode in range(MAX_NUM_EPISODES):
         selectedRules=[]
         for machine, row in obs.iterrows():
             # selectedRule = machinesNN[machine].selectJobNN(row)  # selected job is a rule here (1 of 16), not a specific one
-            selectedRules.append((machine,1))
+            selectedRules.append((machine,0))
         obs, reward, episode_over, info = env.step(selectedRules)
             # machinesNN[machine].trainNN(row, nobs, reward)   # TODO: aqui devuelvo 0, nada, que hago?
 

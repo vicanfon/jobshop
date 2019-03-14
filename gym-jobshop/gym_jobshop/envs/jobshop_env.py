@@ -85,10 +85,11 @@ class JobShopEnv(Env):
             clock3 = (pd.to_datetime(self.clock)+pd.to_timedelta(job['TiempoProcesamiento'],unit='m')).astype("datetime64[s]")
             # clock3 = clock3.round('s')
             self.eventSimulator.addEvents(self.eventSimulator.createEvents(job, 3, clock3))
-            jobs1= job.copy(deep=True)
+            jobs1= job # .copy(deep=True)
             jobs1['Fase'] += 10
             jobs1['n_pasos_restantes'] -= 1
-            self.eventSimulator.addEvents(self.eventSimulator.createEvents(jobs1[jobs1['n_pasos_restantes']>=0], 1, clock3))
+            if len(jobs1[jobs1['n_pasos_restantes']>=0])>0:
+                self.eventSimulator.addEvents(self.eventSimulator.createEvents(jobs1[jobs1['n_pasos_restantes']>=0], 1, clock3))
         # TODO: add history here to register what rule I have selected
         # reward = self._get_reward(self.clock)
         rewards = self._get_reward()
@@ -132,9 +133,9 @@ class JobShopEnv(Env):
                                                 jobs['Lote']
         jobs['TiempoRestante'] = pd.to_datetime(jobs['TiempoOcupacion'])
         jobs['n_pasos_restantes'] = jobs['n_pasos']-(jobs['Fase'].astype('int')/10).astype('int')
-        jobs = jobs[['IdPedido','Fase','CodMaquina','FechaPedido','FechaEntrega','FechaCola','TiempoProcesamiento','TiempoOcupacion','TiempoRestante','n_pasos','n_pasos_restantes']]
+        # jobs = jobs[['IdPedido','Fase','CodMaquina','FechaPedido','FechaEntrega','FechaCola','TiempoProcesamiento','TiempoOcupacion','TiempoRestante','n_pasos','n_pasos_restantes']]
         # add new jobs
-        self.MachineQueues = self.MachineQueues.append(jobs, ignore_index=True)
+        self.MachineQueues = self.MachineQueues.append(jobs[['IdPedido','Fase','CodMaquina','FechaPedido','FechaEntrega','FechaCola','TiempoProcesamiento','TiempoOcupacion','TiempoRestante','n_pasos','n_pasos_restantes']], ignore_index=True)
 
         self.eventSimulator.processEvents(events)
 
