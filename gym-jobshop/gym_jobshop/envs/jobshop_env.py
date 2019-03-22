@@ -91,15 +91,15 @@ class JobShopEnv(Env):
             if len(jobs1[jobs1['n_pasos_restantes']>=0])>0:
                 self.eventSimulator.addEvents(self.eventSimulator.createEvents(jobs1[jobs1['n_pasos_restantes']>=0], 1, clock3))
         # TODO: add history here to register what rule I have selected
-        # reward = self._get_reward(self.clock)
-        rewards = self._get_reward()
+
+        rewards = self._get_rewards()
         obs = self.loop_of_events()
         episode_over = False if len(obs) > 0 else True
         # obs = obs if len(obs) > 0 else pd.DataFrame([(0.0, 0.0)], columns={'queue_length', 'avg_waiting_time'})
 
         return obs, rewards, episode_over, {}
 
-    def _get_reward(self):
+    def _get_rewards(self):
         """ Compute the av_waiting time """
         return - self.EnvState['avg_waiting_time'].copy(deep=True)
 

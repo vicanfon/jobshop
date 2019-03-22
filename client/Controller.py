@@ -50,10 +50,12 @@ for episode in range(MAX_NUM_EPISODES):
         # obs has the list of machines that are free to process new jobs
         selectedRules=[]
         for machine, row in obs.iterrows():
-            # selectedRule = machinesNN[machine].selectJobNN(row)  # selected job is a rule here (1 of 16), not a specific one
-            selectedRules.append((machine,0))
-        obs, reward, episode_over, info = env.step(selectedRules)
-            # machinesNN[machine].trainNN(row, nobs, reward)   # TODO: aqui devuelvo 0, nada, que hago?
+            selectedRule = machinesNN[machine].selectJobNN(row)  # selected job is a rule here (1 of 16), not a specific one
+            selectedRules.append((machine,selectedRule))
+            # selectedRules.append((machine,0))
+        obs, rewards, episode_over, info = env.step(selectedRules)
+        for machine, row in rewards.to_frame().iterrows():
+            machinesNN[machine].setReward(rewards.loc[machine])
 
     eventsHistory = env.eventsHistory()
     time = eventsHistory.iloc[-1].TEvent - eventsHistory.iloc[0].TEvent

@@ -5,6 +5,7 @@ from keras.layers import Dense, InputLayer
 
 class machineNN():
     def __init__(self, n_inputs, n_outputs):
+        self.iter = 0
         # create the keras model
         self.n_inputs = n_inputs
         self.n_outputs = n_outputs
@@ -17,18 +18,31 @@ class machineNN():
         self.eps = 0.2
         self.decay_factor = 0.999
         self.reward = 0
+        self.last_reward = 0
 
     def selectJob(self, machineStatus):
         return 2
     
     def adjustEps(self):
         self.eps *= self.decay_factor
-    
-    def selectJobNN(self, machinesStatus):
+
+    def setReward(self, reward):
+        self.last_reward = reward
+
+    def selectJobNN(self, machineStatus):
+
+        if self.iter > 0:
+            self.trainNN(self.prevMachineStatus, machineStatus, self.last_reward)
+
+
         if np.random.random() < self.eps:
             a = np.random.randint(0, self.n_outputs-1)
         else:
-            a = np.argmax(self.model.predict(machinesStatus.values.reshape(1,self.n_inputs)))
+            a = np.argmax(self.model.predict(machineStatus.values.reshape(1,self.n_inputs)))
+
+        self.iter += 1
+        self.prevMachineStatus = machineStatus
+
         return a
     
     def trainNN(self, machinesStatus, new_machinesStatus, r):
