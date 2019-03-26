@@ -37,7 +37,7 @@ if my_file.is_file():
 
 reward_history = []
 
-MAX_NUM_EPISODES = 50
+MAX_NUM_EPISODES = 1
 
 for episode in range(MAX_NUM_EPISODES):
     print("episode: "+str(episode))
@@ -50,12 +50,12 @@ for episode in range(MAX_NUM_EPISODES):
         # obs has the list of machines that are free to process new jobs
         selectedRules=[]
         for machine, row in obs.iterrows():
-            selectedRule = machinesNN[machine].selectJobNN(row)  # selected job is a rule here (1 of 16), not a specific one
-            selectedRules.append((machine,selectedRule))
-            # selectedRules.append((machine,0))
+            # selectedRule = machinesNN[machine].selectJobNN(row)  # selected job is a rule here (1 of 16), not a specific one
+            # selectedRules.append((machine,selectedRule))
+            selectedRules.append((machine,4))
         obs, rewards, episode_over, info = env.step(selectedRules)
-        for machine, row in rewards.to_frame().iterrows():
-            machinesNN[machine].setReward(rewards.loc[machine])
+        # for machine, row in rewards.to_frame().iterrows():
+        #    machinesNN[machine].setReward(rewards.loc[machine])
 
     eventsHistory = env.eventsHistory()
     time = eventsHistory.iloc[-1].TEvent - eventsHistory.iloc[0].TEvent
