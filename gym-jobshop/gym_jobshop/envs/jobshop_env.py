@@ -75,7 +75,7 @@ class JobShopEnv(Env):
     def step(self, actions):
         # action is a tuple (machine, selectedRule, clock)
         for action in actions:
-            job = self._selectJob(action[0],action[1])    # TODO: how to to this with a list
+            job = self._selectJob(action[0],action[1],self.clock)    # TODO: how to to this with a list
             self.MachineProcessing.loc[job['CodMaquina'],'IdPedido'] = job['IdPedido'].values
             # events, event, clock
             newEvents2 = self.eventSimulator.createEvents(job, 2, self.clock)
@@ -88,6 +88,7 @@ class JobShopEnv(Env):
             jobs1= job # .copy(deep=True)
             jobs1['Fase'] += 10
             jobs1['n_pasos_restantes'] -= 1
+            jobs1['TiempoRestante'] -= jobs1['TiempoProcesamiento']
             if len(jobs1[jobs1['n_pasos_restantes']>=0])>0:
                 self.eventSimulator.addEvents(self.eventSimulator.createEvents(jobs1[jobs1['n_pasos_restantes']>=0], 1, clock3))
         # TODO: add history here to register what rule I have selected
@@ -131,7 +132,7 @@ class JobShopEnv(Env):
                                                 jobs['Lote']
         jobs['TiempoOcupacion'] = jobs['TTPreparacion'] + jobs['TTUnitario'] * \
                                                 jobs['Lote']
-        jobs['TiempoRestante'] = pd.to_datetime(jobs['TiempoOcupacion'])
+        jobs['TiempoRestante'] = jobs['TiempoOcupacion']
         jobs['n_pasos_restantes'] = jobs['n_pasos']-(jobs['Fase'].astype('int')/10).astype('int')
         # jobs = jobs[['IdPedido','Fase','CodMaquina','FechaPedido','FechaEntrega','FechaCola','TiempoProcesamiento','TiempoOcupacion','TiempoRestante','n_pasos','n_pasos_restantes']]
         # add new jobs
@@ -161,7 +162,7 @@ class JobShopEnv(Env):
         """ Viewer only supports human mode currently. """
         pass
 
-    def _selectJob(self, machine, idRule):
+    def _selectJob(self, machine, idRule, now):
         queue = self.MachineQueues[self.MachineQueues['CodMaquina'] == machine]
         chosen = []
         # todo: compute dynamic attributes
@@ -174,26 +175,33 @@ class JobShopEnv(Env):
         elif idRule == rules.LOT.value:
             chosen = pd.DataFrame([queue.sort_values(by=['TiempoProcesamiento']).iloc[-1]])
         elif idRule == rules.SROT.value:
-            pass
+            chosen = pd.DataFrame([queue.sort_values(by=['TiempoRestante']).iloc[0]])
         elif idRule == rules.LROT.value:
-            pass
+            chosen = pd.DataFrame([queue.sort_values(by=['TiempoRestante']).iloc[-1]])
         elif idRule == rules.LRO.value:
-            chosen = pd.DataFrame([queue.sort_values(by=['remainingSteps']).iloc[0]])
+            chosen = pd.DataFrame([queue.sort_values(by=['n_pasos_restantes']).iloc[0]])
         elif idRule == rules.MRO.value:
-            chosen = pd.DataFrame([queue.sort_values(by=['remainingSteps']).iloc[-1]])
+            chosen = pd.DataFrame([queue.sort_values(by=['n_pasos_restantes']).iloc[-1]])
         elif idRule == rules.DD.value:
-            chosen = pd.DataFrame([queue.sort_values(by=['deliverDate']).iloc[0]])
+            chosen = pd.DataFrame([queue.sort_values(by=['FechaEntrega']).iloc[0]])
         elif idRule == rules.SS.value:
+            queue['ss']=pd.to_datetime(queue['FechaEntrega'])-now
             chosen = pd.DataFrame([queue.sort_values(by=['ss']).iloc[0]])
         elif idRule == rules.DS.value:
+            queue['ds'] = pd.to_datetime(queue['FechaEntrega']) - now - pd.to_datetime(queue['TiempoRestante'])
             chosen = pd.DataFrame([queue.sort_values(by=['ds']).iloc[0]])
         elif idRule == rules.SSROT.value:
+            queue['ssrot'] = (pd.to_datetime(queue['FechaEntrega']) - now)/queue['TiempoRestante']
             chosen = pd.DataFrame([queue.sort_values(by=['ssrot']).iloc[0]])
         elif idRule == rules.DSROT.value:
+            queue['dsrot'] = (pd.to_datetime(queue['FechaEntrega']) - now - pd.to_datetime(queue['TiempoRestante']))/queue['TiempoRestante']
             chosen = pd.DataFrame([queue.sort_values(by=['dsrot']).iloc[0]])
         elif idRule == rules.SSRO.value:
+            queue['ssro'] = (pd.to_datetime(queue['FechaEntrega']) - now) / queue['n_pasos_restantes']
             chosen = pd.DataFrame([queue.sort_values(by=['ssro']).iloc[0]])
         elif idRule == rules.DSRO.value:
+            queue['dsro'] = (pd.to_datetime(queue['FechaEntrega']) - now - pd.to_datetime(queue['TiempoRestante'])) / \
+                             queue['n_pasos_restantes']
             chosen = pd.DataFrame([self.sort_values(by=['dsro']).iloc[0]])
         # self.processingJob = chosen.copy(deep=True)
         self.MachineQueues.drop(chosen.index, inplace=True)
