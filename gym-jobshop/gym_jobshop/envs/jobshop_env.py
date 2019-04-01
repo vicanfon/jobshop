@@ -43,13 +43,9 @@ class JobShopEnv(Env):
         self.df_Machines = machines
         self.df_Products = products
         self.df_Routes = routes
-        self.df_Routes['n_pasos'] = self.df_Routes.groupby('CodPieza')['CodPieza'].transform('count')
-        self.df_Routes['TTPreparacion'] = self.df_Routes.groupby('CodPieza')['TPreparacion'].transform('sum')
-        self.df_Routes['TTUnitario'] = self.df_Routes.groupby('CodPieza')['TUnitario'].transform('sum')
         self.df_Orders = orders
-        self.df_Orders = self.df_Orders.astype({'IdPedido': 'int64'})
-        self._nMachines= len(self.df_Machines.index)
-        self._nProducts= len(self.df_Products.index)
+        # self._nMachines= len(self.df_Machines.index)
+        # self._nProducts= len(self.df_Products.index)
 
     def reset(self):
         # reset event simulator
@@ -87,8 +83,8 @@ class JobShopEnv(Env):
             self.eventSimulator.addEvents(self.eventSimulator.createEvents(job, 3, clock3))
             jobs1= job # .copy(deep=True)
             jobs1['Fase'] += 10
-            jobs1['n_pasos_restantes'] -= 1
             jobs1['TiempoRestante'] -= jobs1['TiempoProcesamiento']
+            jobs1['n_pasos_restantes'] -= 1
             if len(jobs1[jobs1['n_pasos_restantes']>=0])>0:
                 self.eventSimulator.addEvents(self.eventSimulator.createEvents(jobs1[jobs1['n_pasos_restantes']>=0], 1, clock3))
         # TODO: add history here to register what rule I have selected
@@ -125,25 +121,28 @@ class JobShopEnv(Env):
 
     def assignJobs(self, events, clock):
         # Assign jobs to machine queue
-        jobs = events.join(self.df_Orders.set_index('IdPedido'), on='IdPedido').merge(self.df_Routes, left_on=['CodPieza','Fase'], right_on=['CodPieza','Fase']).copy(deep=True)
-        # jobs['TiempoProcesamiento'] = jobs['TPreparacion']+jobs['TUnitario']*jobs['Lote']
+        # jobs = events.join(self.df_Orders.set_index('IdPedido'), on='IdPedido').merge(self.df_Routes, left_on=['CodPieza','Fase'], right_on=['CodPieza','Fase']).copy(deep=True)
+        jobs = events.copy(deep=True)
+
         jobs['FechaCola'] = pd.to_datetime(clock)
         jobs['TiempoProcesamiento'] = jobs['TPreparacion'] + jobs['TUnitario'] * \
                                                 jobs['Lote']
         jobs['TiempoOcupacion'] = jobs['TTPreparacion'] + jobs['TTUnitario'] * \
                                                 jobs['Lote']
         jobs['TiempoRestante'] = jobs['TiempoOcupacion']
-        jobs['n_pasos_restantes'] = jobs['n_pasos']-(jobs['Fase'].astype('int')/10).astype('int')
-        # jobs = jobs[['IdPedido','Fase','CodMaquina','FechaPedido','FechaEntrega','FechaCola','TiempoProcesamiento','TiempoOcupacion','TiempoRestante','n_pasos','n_pasos_restantes']]
+
+        # jobs['n_pasos_restantes'] = jobs['n_pasos']-(jobs['Fase'].astype('int')/10).astype('int')
+
         # add new jobs
-        self.MachineQueues = self.MachineQueues.append(jobs[['IdPedido','Fase','CodMaquina','FechaPedido','FechaEntrega','FechaCola','TiempoProcesamiento','TiempoOcupacion','TiempoRestante','n_pasos','n_pasos_restantes']], ignore_index=True)
+        self.MachineQueues = self.MachineQueues.append(jobs[['IdPedido','Fase','CodMaquina','TEvent','FechaEntrega','FechaCola','TiempoProcesamiento','TiempoOcupacion','TiempoRestante','n_pasos','n_pasos_restantes']], ignore_index=True)
 
         self.eventSimulator.processEvents(events)
 
     def freeMachine(self, events, clock):
         # Assign Events to Machine queues
         self.eventSimulator.processEvents(events)  # update 3 to executed
-        machines = events.join(self.df_Orders.set_index('IdPedido'), on='IdPedido').merge(self.df_Routes, left_on=['CodPieza','Fase'], right_on=['CodPieza','Fase'])['CodMaquina'].copy(deep=True)
+        # machines = events.join(self.df_Orders.set_index('IdPedido'), on='IdPedido').merge(self.df_Routes, left_on=['CodPieza','Fase'], right_on=['CodPieza','Fase'])['CodMaquina'].copy(deep=True)
+        machines = events['CodMaquina'].copy(deep=True)
         self.MachineProcessing.loc[machines,"IdPedido"] = -1
 
 
