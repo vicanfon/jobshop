@@ -41,7 +41,7 @@ class JobShopEnv(Env):
         Receives four pandas dataframes with data on machines, products, orders and routes
         """
         self.df_Machines = machines
-        self.df_Products = products
+        # self.df_Products = products
         self.df_Routes = routes
         self.df_Orders = orders
         # self._nMachines= len(self.df_Machines.index)
@@ -52,6 +52,7 @@ class JobShopEnv(Env):
         self.eventSimulator = eventSimulator(self.df_Orders, self.df_Routes)
 
         # Init the Global Queue and MachineProcessing
+        self.History = pd.DataFrame()
         self.MachineQueues = pd.DataFrame(columns={'IdPedido','Fase','CodMaquina','FechaPedido','FechaEntrega','FechaCola','TiempoProcesamiento','TiempoOcupacion','TiempoRestante','n_pasos','n_pasos_restantes'})
         self.MachineProcessing = pd.DataFrame(columns={'IdPedido'}, index=self.df_Machines.values[:,0], dtype=np.int8)
         self.MachineProcessing['IdPedido']=-1
