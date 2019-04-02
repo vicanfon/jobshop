@@ -72,27 +72,35 @@ class changeReturn():
     def __init__(self):
         self.dfc = pd.DataFrame(np.zeros((100, 1)), columns=['value'], dtype=int)
 
-    def readDF(self):  # dataframes are passed by reference
+    def readDF(self):  # return REFERENCE
         return self.dfc
 
-    def filterDF(self):  # filters return a copy
+    def filterDF(self):  # return COPY
         return self.dfc[self.dfc["value"] > 0]
 
-    def filterDF2(self):  # filters return a copy
+    def filterDF2(self):  # return REFERENCE
         # df.loc[selection criteria, columns I want] = value
         return self.dfc.loc[self.dfc.value > 0,'value']
 
-    def filterDF3(self):  # filters return a copy
+    def filterDF2B(self):  # return COPY
+        # df.loc[selection criteria, columns I want] = value
+        return self.dfc.loc[self.dfc.value > 0,:]
+
+    def filterDF2C(self):  # return REFERENCE
+        # df.loc[selection criteria, columns I want] = value
+        return self.dfc.loc[self.dfc.value > 0,['value']]
+
+    def filterDF2D(self):  # return COPY
+        # df.loc[selection criteria, columns I want] = value
+        return self.dfc.iloc[self.dfc[self.dfc.value > 0].index.values,:]
+
+    def filterDF3(self):  # return COPY
         # df.loc[selection criteria, columns I want] = value
         return self.dfc.iloc[(self.dfc.value > 0).values]
 
-    def filterDF4(self):  # filters return ???
-        # df.loc[selection criteria, columns I want] = value
-        return self.dfc.at[self.dfc.value > 0]
-
-    def filterDF5(self):  # filters return BY REFERENCE
+    def filterDF4(self):  # return COPY but always dataframe
         # df1.loc[lambda df: df.A > 0, :]
-        return self.dfc.loc[lambda df:df.value > 0]
+        return self.dfc.loc[lambda df:df.value > 0, :]
 
     def columnDF(self):  # returns a reference, not a copy
         return self.dfc["value"]
@@ -103,8 +111,35 @@ class changeReturn():
     def rowDF2(self,i):  # returns a ???
         return self.dfc.loc[i]
 
+    def rowDF3(self,i):  # returns a copy and doesn't work
+        return self.dfc.loc[i].to_frame()
+
     def writeDF(self,i,v):
         self.dfc.iloc[i,0]=v
+
+    def writeDF(self,i,v):
+        self.dfc.iloc[i,0]=v
+
+    def transitiveDF(self):  # this doesn't work. Someway creates an image
+        intermediate=self.dfc.loc[self.dfc.value > 0]
+        intermediate.loc[:]=68
+        intermediate.iloc[:, 0] = 68
+        return intermediate
+
+    def transitiveDF2(self):  # this doesn't work. Someway creates an image
+        intermediate=self.dfc[self.dfc.value > 0]
+        intermediate.loc[:]=68
+        return intermediate
+
+    def transitiveDF3(self):  # this works by reference. so transitivity is working here but not filtering
+        intermediate=self.dfc
+        intermediate.iloc[1,0]=68
+        return intermediate
+
+    def transitiveDF4(self):  # to_frames are creating copies of series and are sheet
+        intermediate=self.dfc.to_frame()
+        intermediate.iloc[1,0]=68
+        return intermediate
 
     def writefilteredDF(self,v):    # this code solves the return of dataframes subsets by copy. If the caller has a reference to the dataframe dfc the value is change in the caller variable
         self.dfc.loc[self.dfc.value > 0,'value']=v
@@ -114,6 +149,11 @@ class changeReturn():
 cReturn = changeReturn()
 dfco= cReturn.readDF()
 dfco.iloc[1,0]=9
+dfco=cReturn.filterDF()
+dfco=cReturn.filterDF2()
+dfco=cReturn.filterDF2D()
+dfco=cReturn.filterDF4()
+dfco[:]=19
 dfco= cReturn.rowDF2(1)
 dfco[0]=4
 # cReturn.writefilteredDF(7)
@@ -121,7 +161,8 @@ def val_22():
     for i in range(10000):
         cReturn.filterDF5()
 
-val_22()
+# val_22()
 dfco.iloc[:]=7
-
+dfco=cReturn.filterDF5()
+dfco[:]=17
 print(dfco)
