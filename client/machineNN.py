@@ -11,7 +11,7 @@ class machineNN():
         self.n_outputs = n_outputs
         self.model = Sequential()
         self.model.add(InputLayer(batch_input_shape=(1, n_inputs)))
-        self.model.add(Dense(10, activation='sigmoid'))
+        self.model.add(Dense(8, activation='sigmoid'))
         self.model.add(Dense(n_outputs, activation='linear'))
         self.model.compile(loss='mse', optimizer='adam', metrics=['mae'])
         self.y = 0.95
