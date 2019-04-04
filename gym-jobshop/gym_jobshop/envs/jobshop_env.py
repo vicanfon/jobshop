@@ -31,7 +31,7 @@ class JobShopEnv(Env):
     def __init__(self):
         # self.viewer = None
         # coger una máquina y una de las 16 reglas de secuenciación
-        self.action_space = spaces.Tuple((spaces.Discrete(5), spaces.Discrete(5))) # todo now five rules
+        self.action_space = spaces.Tuple((spaces.Discrete(10), spaces.Discrete(15)))
         # state with lenght of the queue and  y del trabajo
         self.observation_space = spaces.Box(0,np.inf, shape=(10,3), dtype = np.int16) # 'queue_length','avg_waiting_time', 'workingOn'
         # self.seed()

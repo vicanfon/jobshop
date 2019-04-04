@@ -24,7 +24,7 @@ df_Routes = pd.read_csv("./data/Routes.csv", delimiter=',')
 env.setEnv(df_Machines, df_Products, df_Routes, df_Orders)
 
 n_obs=2
-n_rules=4
+n_rules=15
 
 
 # machineNN
@@ -50,12 +50,12 @@ for episode in range(MAX_NUM_EPISODES):
         # obs has the list of machines that are free to process new jobs
         selectedRules=[]
         for machine, row in obs.iterrows():
-            # selectedRule = machinesNN[machine].selectJobNN(row)  # selected job is a rule here (1 of 16), not a specific one
-            # selectedRules.append((machine,selectedRule))
-            selectedRules.append((machine,14))
+            selectedRule = machinesNN[machine].selectJobNN(row)  # selected job is a rule here (1 of 16), not a specific one
+            selectedRules.append((machine,selectedRule))
+            # selectedRules.append((machine,14))
         obs, rewards, episode_over, info = env.step(selectedRules)
-        # for machine, row in rewards.to_frame().iterrows():
-        #    machinesNN[machine].setReward(rewards.loc[machine])
+        for machine, row in rewards.to_frame().iterrows():
+           machinesNN[machine].setReward(rewards.loc[machine])
 
     eventsHistory = env.eventsHistory()
     time = eventsHistory.iloc[-1].TEvent - eventsHistory.iloc[0].TEvent
