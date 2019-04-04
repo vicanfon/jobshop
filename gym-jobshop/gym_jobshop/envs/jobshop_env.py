@@ -147,25 +147,25 @@ class JobShopEnv(Env):
         pass
 
     def _selectJob(self, machine, idRule, now):
-        queue = self.MachineQueues[self.MachineQueues['CodMaquina'] == machine]
+        queue = self.MachineQueues[self.MachineQueues['CodMaquina'] == machine] #.sort_values(by=[,'TEvent'])
         chosen = []
         # todo: compute dynamic attributes
         if idRule == rules.FIFO.value:
             chosen = pd.DataFrame([queue.sort_values(by=['FechaCola']).iloc[0]])
         elif idRule == rules.LIFO.value:
-            chosen = pd.DataFrame([queue.sort_values(by=['FechaCola']).iloc[-1]])
+            chosen = pd.DataFrame([queue.sort_values(by=['FechaCola'], ascending=False).iloc[0]])
         elif idRule == rules.SOT.value:
             chosen = pd.DataFrame([queue.sort_values(by=['TiempoProcesamiento']).iloc[0]])
         elif idRule == rules.LOT.value:
-            chosen = pd.DataFrame([queue.sort_values(by=['TiempoProcesamiento']).iloc[-1]])
+            chosen = pd.DataFrame([queue.sort_values(by=['TiempoProcesamiento'], ascending=False).iloc[0]])
         elif idRule == rules.SROT.value:
             chosen = pd.DataFrame([queue.sort_values(by=['TiempoRestante']).iloc[0]])
         elif idRule == rules.LROT.value:
-            chosen = pd.DataFrame([queue.sort_values(by=['TiempoRestante']).iloc[-1]])
+            chosen = pd.DataFrame([queue.sort_values(by=['TiempoRestante'], ascending=False).iloc[0]])
         elif idRule == rules.LRO.value:
             chosen = pd.DataFrame([queue.sort_values(by=['n_pasos_restantes']).iloc[0]])
         elif idRule == rules.MRO.value:
-            chosen = pd.DataFrame([queue.sort_values(by=['n_pasos_restantes']).iloc[-1]])
+            chosen = pd.DataFrame([queue.sort_values(by=['n_pasos_restantes'], ascending=False).iloc[0]])
         elif idRule == rules.DD.value:
             chosen = pd.DataFrame([queue.sort_values(by=['FechaEntrega']).iloc[0]])
         elif idRule == rules.SS.value:

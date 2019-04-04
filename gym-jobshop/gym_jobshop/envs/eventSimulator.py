@@ -48,7 +48,7 @@ class eventSimulator():
 
     def nextEvents(self):
         # pick next events not processed
-        eventsNonProcessed=self.df_Events[self.df_Events['executed'] == False].sort_values(by=['TEvent', 'Fase'])
+        eventsNonProcessed=self.df_Events[self.df_Events['executed'] == False].sort_values(by=['TEvent'])
         if len(eventsNonProcessed)>0:
             # take the time of the next event
             self.clock=eventsNonProcessed.iloc[0]['TEvent']
