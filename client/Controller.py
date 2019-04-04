@@ -37,7 +37,7 @@ if my_file.is_file():
 
 reward_history = []
 
-MAX_NUM_EPISODES = 20
+MAX_NUM_EPISODES = 50
 
 for episode in range(MAX_NUM_EPISODES):
     print("episode: "+str(episode))
