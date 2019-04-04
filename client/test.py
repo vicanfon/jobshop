@@ -92,7 +92,8 @@ class changeReturn():
 
     def filterDF2D(self):  # return COPY
         # df.loc[selection criteria, columns I want] = value
-        return self.dfc.iloc[self.dfc[self.dfc.value > 0].index.values,:]
+        return self.dfc.iloc[(self.dfc.value > 0).values,:]
+        # return self.dfc.iloc[self.dfc[self.dfc.value > 0].values,:]
 
     def filterDF3(self):  # return COPY
         # df.loc[selection criteria, columns I want] = value

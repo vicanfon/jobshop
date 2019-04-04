@@ -29,16 +29,14 @@ class eventSimulator():
 
         self.clock = pd.NaT
 
-    def createEvents(self, pedidos, eventtype, clock):
-        # pedidos: 'IdPedido', 'FechaPedido', 'Fase','CodMaquina'
-        #if len(pedidos)>0:
-            # pedidos = pedidos[['IdPedido', 'Fase']]
-            # pedidos = pedidos[['IdPedido', 'Fase', 'event','executed','TEvent']] todo: borrar esta
-        pedidos['indexEvent'] = pedidos['IdPedido'].astype(str) + "_" + pedidos['Fase'].astype(str)
-        pedidos['event'] = eventtype
-        pedidos['executed'] = False
-        pedidos['TEvent'] = clock
-        return pedidos.set_index('indexEvent')
+    def createEvents(self, events, eventtype, clock):
+        events['event'] = eventtype
+        if eventtype == 2:
+            events['executed'] = True
+        else:
+            events['executed'] = False
+        events['TEvent'] = clock
+        self.df_Events = self.df_Events.append(events)
 
     def processEvents(self, events):
         self.df_Events.loc[events.index, 'executed'] = True
@@ -50,7 +48,7 @@ class eventSimulator():
 
     def nextEvents(self):
         # pick next events not processed
-        eventsNonProcessed=self.df_Events[self.df_Events['executed'] == True].sort_values(by=['TEvent', 'Fase'])
+        eventsNonProcessed=self.df_Events[self.df_Events['executed'] == False].sort_values(by=['TEvent', 'Fase'])
         if len(eventsNonProcessed)>0:
             # take the time of the next event
             self.clock=eventsNonProcessed.iloc[0]['TEvent']
@@ -58,6 +56,9 @@ class eventSimulator():
 
         #return the next batch of events to process or an empty dataframe
         return self.clock, eventsNonProcessed[eventsNonProcessed["TEvent"] == self.clock]
-    
+
+    def updateEvent(self,index,attribute,value):    # this code solves the return of dataframes subsets by copy. If the caller has a reference to the dataframe dfc the value is change in the caller variable
+        self.df_Events.loc[index,attribute]=value
+
     def history(self):
         return self.df_Events.copy(deep=True)
