@@ -1,4 +1,2 @@
 # jobshop
-jobshop openai gym implementation.
-
-It is composed of three my building blocks:
+Python implementation of jobshop schedulling using openai gym.
